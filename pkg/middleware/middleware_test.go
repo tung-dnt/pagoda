@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/services"
-	"github.com/mikestefanello/pagoda/pkg/tests"
+	"github.com/tung-dnt/pagoda/config"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/tests"
 )
 
 var (
 	c   *services.Container
-	usr *ent.User
+	usr *pgdb.User
 )
 
 func TestMain(m *testing.M) {
@@ -24,7 +24,7 @@ func TestMain(m *testing.M) {
 
 	// Create a user
 	var err error
-	if usr, err = tests.CreateUser(c.ORM); err != nil {
+	if usr, err = tests.CreateUser(c.Queries); err != nil {
 		panic(err)
 	}
 

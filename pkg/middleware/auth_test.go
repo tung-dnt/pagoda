@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/tests"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/tests"
 
 	"github.com/stretchr/testify/require"
 
@@ -31,7 +31,7 @@ func TestLoadAuthenticatedUser(t *testing.T) {
 	// Verify the midldeware returns the authenticated user
 	_ = tests.ExecuteMiddleware(ctx, mw)
 	require.NotNil(t, ctx.Get(context.AuthenticatedUserKey))
-	ctxUsr, ok := ctx.Get(context.AuthenticatedUserKey).(*ent.User)
+	ctxUsr, ok := ctx.Get(context.AuthenticatedUserKey).(*pgdb.User)
 	require.True(t, ok)
 	assert.Equal(t, usr.ID, ctxUsr.ID)
 }
@@ -83,7 +83,7 @@ func TestLoadValidPasswordToken(t *testing.T) {
 	// Add user and password token context but no token and expect a redirect
 	ctx.SetParamNames("user", "password_token")
 	ctx.SetParamValues(fmt.Sprintf("%d", usr.ID), "1")
-	_ = tests.ExecuteMiddleware(ctx, LoadUser(c.ORM))
+	_ = tests.ExecuteMiddleware(ctx, LoadUser(c.Queries))
 	err = tests.ExecuteMiddleware(ctx, LoadValidPasswordToken(c.Auth))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusFound, ctx.Response().Status)
@@ -91,7 +91,7 @@ func TestLoadValidPasswordToken(t *testing.T) {
 	// Add user context and invalid password token and expect a redirect
 	ctx.SetParamNames("user", "password_token", "token")
 	ctx.SetParamValues(fmt.Sprintf("%d", usr.ID), "1", "faketoken")
-	_ = tests.ExecuteMiddleware(ctx, LoadUser(c.ORM))
+	_ = tests.ExecuteMiddleware(ctx, LoadUser(c.Queries))
 	err = tests.ExecuteMiddleware(ctx, LoadValidPasswordToken(c.Auth))
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusFound, ctx.Response().Status)
@@ -103,10 +103,10 @@ func TestLoadValidPasswordToken(t *testing.T) {
 	// Add user and valid password token
 	ctx.SetParamNames("user", "password_token", "token")
 	ctx.SetParamValues(fmt.Sprintf("%d", usr.ID), fmt.Sprintf("%d", pt.ID), token)
-	_ = tests.ExecuteMiddleware(ctx, LoadUser(c.ORM))
+	_ = tests.ExecuteMiddleware(ctx, LoadUser(c.Queries))
 	err = tests.ExecuteMiddleware(ctx, LoadValidPasswordToken(c.Auth))
 	assert.Nil(t, err)
-	ctxPt, ok := ctx.Get(context.PasswordTokenKey).(*ent.PasswordToken)
+	ctxPt, ok := ctx.Get(context.PasswordTokenKey).(*pgdb.PasswordToken)
 	require.True(t, ok)
 	assert.Equal(t, pt.ID, ctxPt.ID)
 }
@@ -129,11 +129,13 @@ func TestRequireAdmin(t *testing.T) {
 	tests.AssertHTTPErrorCode(t, err, http.StatusUnauthorized)
 
 	// Create an admin and login
-	adm, err := tests.CreateUser(c.ORM)
+	adm, err := tests.CreateUser(c.Queries)
 	require.NoError(t, err)
-	err = c.ORM.User.Update().
-		SetAdmin(true).
-		Exec(goctx.Background())
+	_, err = c.Database.Exec(
+		goctx.Background(),
+		"UPDATE users SET admin = TRUE WHERE id = $1",
+		adm.ID,
+	)
 	require.NoError(t, err)
 	err = c.Auth.Login(ctx, adm.ID)
 	require.NoError(t, err)

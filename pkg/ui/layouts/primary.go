@@ -1,12 +1,11 @@
 package layouts
 
 import (
-	"github.com/mikestefanello/pagoda/ent/admin"
-	"github.com/mikestefanello/pagoda/pkg/routenames"
-	"github.com/mikestefanello/pagoda/pkg/ui"
-	"github.com/mikestefanello/pagoda/pkg/ui/cache"
-	. "github.com/mikestefanello/pagoda/pkg/ui/components"
-	"github.com/mikestefanello/pagoda/pkg/ui/icons"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/ui"
+	"github.com/tung-dnt/pagoda/pkg/ui/cache"
+	. "github.com/tung-dnt/pagoda/pkg/ui/components"
+	"github.com/tung-dnt/pagoda/pkg/ui/icons"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -64,7 +63,6 @@ func search() Node {
 					Attr("@click", "search_modal.showModal();"),
 				),
 			),
-
 		)
 	})
 }
@@ -121,17 +119,7 @@ func sidebarMenu(r *ui.Request) Node {
 	}
 
 	adminSubMenu := func() Node {
-		entityTypeLinks := make(Group, len(admin.GetEntityTypes()))
-		for _, n := range admin.GetEntityTypes() {
-			entityTypeLinks = append(
-				entityTypeLinks,
-				MenuLink(r, icons.PencilSquare(), n.GetName(), routenames.AdminEntityList(n.GetName())),
-			)
-		}
-
 		return Group{
-			header("Entities"),
-			entityTypeLinks,
 			header("Monitoring"),
 			Li(
 				A(

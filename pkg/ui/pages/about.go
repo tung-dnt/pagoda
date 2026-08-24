@@ -2,10 +2,10 @@ package pages
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/pkg/ui"
-	"github.com/mikestefanello/pagoda/pkg/ui/cache"
-	. "github.com/mikestefanello/pagoda/pkg/ui/components"
-	"github.com/mikestefanello/pagoda/pkg/ui/layouts"
+	"github.com/tung-dnt/pagoda/pkg/ui"
+	"github.com/tung-dnt/pagoda/pkg/ui/cache"
+	. "github.com/tung-dnt/pagoda/pkg/ui/components"
+	"github.com/tung-dnt/pagoda/pkg/ui/layouts"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -45,8 +45,8 @@ func About(ctx echo.Context) error {
 						Body:  "High performance, extensible, minimalist Go web framework. Visit <a href=\"https://echo.labstack.com/\">echo.labstack.com</a> to learn more.",
 					},
 					{
-						Title: "Ent",
-						Body:  "Simple, yet powerful ORM for modeling and querying data. Visit <a href=\"https://entgo.io/\">entgo.io</a> to learn more.",
+						Title: "sqlc",
+						Body:  "Generates fully type-safe, idiomatic Go code from plain SQL. Visit <a href=\"https://sqlc.dev/\">sqlc.dev</a> to learn more.",
 					},
 					{
 						Title: "Gomponents",

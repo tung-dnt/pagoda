@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/tests"
+	"github.com/tung-dnt/pagoda/config"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/tests"
 
 	"github.com/labstack/echo/v4"
 )
@@ -14,7 +14,7 @@ import (
 var (
 	c   *Container
 	ctx echo.Context
-	usr *ent.User
+	usr *pgdb.User
 )
 
 func TestMain(m *testing.M) {
@@ -30,7 +30,7 @@ func TestMain(m *testing.M) {
 
 	// Create a test user
 	var err error
-	if usr, err = tests.CreateUser(c.ORM); err != nil {
+	if usr, err = tests.CreateUser(c.Queries); err != nil {
 		panic(err)
 	}
 

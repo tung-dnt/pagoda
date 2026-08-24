@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mikestefanello/pagoda/pkg/routenames"
 	"github.com/stretchr/testify/assert"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
 )
 
 // Simple example of how to test routes and their markup using the test HTTP server spun up within

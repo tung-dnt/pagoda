@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/htmx"
-	"github.com/mikestefanello/pagoda/pkg/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tung-dnt/pagoda/config"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/pagoda/pkg/htmx"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/tests"
 	"maragu.dev/gomponents"
 	"maragu.dev/gomponents/html"
 )
@@ -29,7 +29,7 @@ func TestNewRequest(t *testing.T) {
 	assert.Same(t, htmx.GetRequest(ctx), r.Htmx)
 
 	ctx, _ = tests.NewContext(e, "/abc")
-	usr := &ent.User{
+	usr := &pgdb.User{
 		ID: 1,
 	}
 	ctx.Set(context.AuthenticatedUserKey, usr)

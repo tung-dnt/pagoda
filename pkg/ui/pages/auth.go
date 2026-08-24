@@ -2,9 +2,9 @@ package pages
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/pkg/ui"
-	"github.com/mikestefanello/pagoda/pkg/ui/forms"
-	"github.com/mikestefanello/pagoda/pkg/ui/layouts"
+	"github.com/tung-dnt/pagoda/pkg/ui"
+	"github.com/tung-dnt/pagoda/pkg/ui/forms"
+	"github.com/tung-dnt/pagoda/pkg/ui/layouts"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

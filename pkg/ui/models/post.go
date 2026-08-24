@@ -3,9 +3,9 @@ package models
 import (
 	"fmt"
 
-	"github.com/mikestefanello/pagoda/pkg/pager"
-	"github.com/mikestefanello/pagoda/pkg/ui"
-	. "github.com/mikestefanello/pagoda/pkg/ui/components"
+	"github.com/tung-dnt/pagoda/pkg/pager"
+	"github.com/tung-dnt/pagoda/pkg/ui"
+	. "github.com/tung-dnt/pagoda/pkg/ui/components"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

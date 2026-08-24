@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/mikestefanello/backlite"
-	"github.com/mikestefanello/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
 
-	"github.com/mikestefanello/pagoda/pkg/log"
-	"github.com/mikestefanello/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/pagoda/pkg/services"
 )
 
 // ExampleTask is an example implementation of backlite.Task.

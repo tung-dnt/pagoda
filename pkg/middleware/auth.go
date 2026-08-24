@@ -1,16 +1,18 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/log"
-	"github.com/mikestefanello/pagoda/pkg/msg"
-	"github.com/mikestefanello/pagoda/pkg/routenames"
-	"github.com/mikestefanello/pagoda/pkg/services"
+	"github.com/jackc/pgx/v5"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/pagoda/pkg/msg"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/services"
 
 	"github.com/labstack/echo/v4"
 )
@@ -20,12 +22,16 @@ func LoadAuthenticatedUser(authClient *services.AuthClient) echo.MiddlewareFunc 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			u, err := authClient.GetAuthenticatedUser(c)
-			switch err.(type) {
-			case *ent.NotFoundError:
-				log.Ctx(c).Warn("auth user not found")
-			case services.NotAuthenticatedError:
-			case nil:
+
+			var notAuthErr services.NotAuthenticatedError
+
+			switch {
+			case err == nil:
 				c.Set(context.AuthenticatedUserKey, u)
+			case errors.Is(err, pgx.ErrNoRows):
+				log.Ctx(c).Warn("auth user not found")
+			case errors.As(err, &notAuthErr):
+				// A non-authenticated user is expected and requires no action.
 			default:
 				return echo.NewHTTPError(
 					http.StatusInternalServerError,
@@ -49,10 +55,10 @@ func LoadValidPasswordToken(authClient *services.AuthClient) echo.MiddlewareFunc
 			if c.Get(context.UserKey) == nil {
 				return echo.NewHTTPError(http.StatusInternalServerError)
 			}
-			usr := c.Get(context.UserKey).(*ent.User)
+			usr := c.Get(context.UserKey).(*pgdb.User)
 
 			// Extract the token ID.
-			tokenID, err := strconv.Atoi(c.Param("password_token"))
+			tokenID, err := strconv.ParseInt(c.Param("password_token"), 10, 64)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusNotFound)
 			}
@@ -108,7 +114,7 @@ func RequireNoAuthentication(next echo.HandlerFunc) echo.HandlerFunc {
 func RequireAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if u := c.Get(context.AuthenticatedUserKey); u != nil {
-			if user, ok := u.(*ent.User); ok {
+			if user, ok := u.(*pgdb.User); ok {
 				if user.Admin {
 					return next(c)
 				}

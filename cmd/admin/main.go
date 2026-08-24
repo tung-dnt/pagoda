@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mikestefanello/pagoda/pkg/log"
-	"github.com/mikestefanello/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/log"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/services"
 )
 
 // main creates a new admin user with the email passed in via the flag.
@@ -35,15 +36,20 @@ func main() {
 		invalid("failed to generate a random password")
 	}
 
+	// Hash the password before storing it.
+	hashed, err := c.Auth.HashPassword(pw)
+	if err != nil {
+		invalid("failed to hash the password")
+	}
+
 	// Create the admin user.
-	err = c.ORM.User.
-		Create().
-		SetEmail(email).
-		SetName("Admin").
-		SetAdmin(true).
-		SetVerified(true).
-		SetPassword(pw).
-		Exec(context.Background())
+	_, err = c.Queries.CreateUser(context.Background(), pgdb.CreateUserParams{
+		Name:     "Admin",
+		Email:    email,
+		Password: hashed,
+		Verified: true,
+		Admin:    true,
+	})
 
 	if err != nil {
 		invalid(err.Error())

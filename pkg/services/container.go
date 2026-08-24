@@ -9,17 +9,15 @@ import (
 	"os"
 	"strings"
 
-	entsql "entgo.io/ent/dialect/sql"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikestefanello/backlite"
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/log"
 	"github.com/spf13/afero"
-
-	// Required by ent.
-	_ "github.com/mikestefanello/pagoda/ent/runtime"
+	"github.com/tung-dnt/pagoda/config"
+	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/pagoda/pkg/postgres"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
 )
 
 // Container contains all services used by the application and provides an easy way to handle dependency
@@ -37,14 +35,18 @@ type Container struct {
 	// Cache contains the cache client.
 	Cache *CacheClient
 
-	// Database stores the connection to the database.
-	Database *sql.DB
+	// Database stores the connection pool to the PostgreSQL database.
+	Database *pgxpool.Pool
+
+	// Queries stores the sqlc-generated querier for the application database.
+	Queries *pgdb.Queries
+
+	// TasksDatabase stores the connection to the SQLite database backing the task queue.
+	// Backlite is SQLite-only, so this is deliberately separate from Database.
+	TasksDatabase *sql.DB
 
 	// Files stores the file system.
 	Files afero.Fs
-
-	// ORM stores a client to the ORM.
-	ORM *ent.Client
 
 	// Mail stores an email sending client.
 	Mail *MailClient
@@ -54,6 +56,10 @@ type Container struct {
 
 	// Tasks stores the task client.
 	Tasks *backlite.Client
+
+	// databaseConnection stores the resolved connection string used for Database, which for tests
+	// contains the randomly-generated schema this container isolates itself within.
+	databaseConnection string
 }
 
 // NewContainer creates and initializes a new Container.
@@ -64,8 +70,8 @@ func NewContainer() *Container {
 	c.initWeb()
 	c.initCache()
 	c.initDatabase()
+	c.initTasksDatabase()
 	c.initFiles()
-	c.initORM()
 	c.initAuth()
 	c.initMail()
 	c.initTasks()
@@ -86,13 +92,18 @@ func (c *Container) Shutdown() error {
 	defer taskCancel()
 	c.Tasks.Stop(taskCtx)
 
-	// Shutdown the ORM.
-	if err := c.ORM.Close(); err != nil {
-		return err
+	// Shutdown the database.
+	c.Database.Close()
+
+	// Discard the disposable schema this test run created.
+	if c.Config.App.Environment == config.EnvTest {
+		if err := postgres.DropSchema(c.databaseConnection); err != nil {
+			return err
+		}
 	}
 
-	// Shutdown the database.
-	if err := c.Database.Close(); err != nil {
+	// Shutdown the task queue database.
+	if err := c.TasksDatabase.Close(); err != nil {
 		return err
 	}
 
@@ -141,22 +152,44 @@ func (c *Container) initCache() {
 	c.Cache = NewCacheClient(store)
 }
 
-// initDatabase initializes the database.
+// initDatabase initializes the PostgreSQL database, applying any pending migrations.
 func (c *Container) initDatabase() {
-	var err error
-	var connection string
+	c.databaseConnection = c.Config.Database.Connection
 
-	switch c.Config.App.Environment {
-	case config.EnvTest:
-		// TODO: Drop/recreate the DB, if this isn't in memory?
-		connection = c.Config.Database.TestConnection
-	default:
-		connection = c.Config.Database.Connection
+	if c.Config.App.Environment == config.EnvTest {
+		// Each test binary runs in its own process and `go test` runs packages in parallel, so every
+		// container isolates itself within a randomly-named schema rather than sharing one and
+		// clobbering the others.
+		c.databaseConnection = replaceRand(c.Config.Database.TestConnection)
+
+		if err := postgres.CreateSchema(c.databaseConnection); err != nil {
+			panic(fmt.Sprintf("failed to create test schema: %v", err))
+		}
 	}
 
-	c.Database, err = openDB(c.Config.Database.Driver, connection)
+	if err := postgres.Migrate(c.databaseConnection); err != nil {
+		panic(fmt.Sprintf("failed to migrate database: %v", err))
+	}
+
+	pool, err := pgxpool.New(context.Background(), c.databaseConnection)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("failed to connect to database: %v", err))
+	}
+
+	if err := pool.Ping(context.Background()); err != nil {
+		panic(fmt.Sprintf("failed to ping database: %v", err))
+	}
+
+	c.Database = pool
+	c.Queries = pgdb.New(pool)
+}
+
+// initTasksDatabase initializes the SQLite database used by the task queue.
+func (c *Container) initTasksDatabase() {
+	var err error
+	c.TasksDatabase, err = openSQLite(c.Config.Database.TasksConnection)
+	if err != nil {
+		panic(fmt.Sprintf("failed to open task queue database: %v", err))
 	}
 }
 
@@ -175,20 +208,9 @@ func (c *Container) initFiles() {
 	c.Files = afero.NewBasePathFs(fs, c.Config.Files.Directory)
 }
 
-// initORM initializes the ORM.
-func (c *Container) initORM() {
-	drv := entsql.OpenDB(c.Config.Database.Driver, c.Database)
-	c.ORM = ent.NewClient(ent.Driver(drv))
-
-	// Run the auto migration tool.
-	if err := c.ORM.Schema.Create(context.Background()); err != nil {
-		panic(err)
-	}
-}
-
 // initAuth initializes the authentication client.
 func (c *Container) initAuth() {
-	c.Auth = NewAuthClient(c.Config, c.ORM)
+	c.Auth = NewAuthClient(c.Config, c.Queries)
 }
 
 // initMail initialize the mail client.
@@ -203,10 +225,10 @@ func (c *Container) initMail() {
 // initTasks initializes the task client.
 func (c *Container) initTasks() {
 	var err error
-	// You could use a separate database for tasks, if you'd like, but using one
-	// makes transaction support easier.
+	// Backlite is SQLite-only, so the queue always runs against its own database rather than the
+	// PostgreSQL pool used for application data.
 	c.Tasks, err = backlite.NewClient(backlite.ClientConfig{
-		DB:              c.Database,
+		DB:              c.TasksDatabase,
 		Logger:          log.Default(),
 		NumWorkers:      c.Config.Tasks.Goroutines,
 		ReleaseAfter:    c.Config.Tasks.ReleaseAfter,
@@ -222,25 +244,24 @@ func (c *Container) initTasks() {
 	}
 }
 
-// openDB opens a database connection.
-func openDB(driver, connection string) (*sql.DB, error) {
-	if driver == "sqlite3" {
-		// Helper to automatically create the directories that the specified sqlite file
-		// should reside in, if one.
-		d := strings.Split(connection, "/")
-		if len(d) > 1 {
-			dirpath := strings.Join(d[:len(d)-1], "/")
+// openSQLite opens the SQLite database used by the task queue.
+func openSQLite(connection string) (*sql.DB, error) {
+	// Helper to automatically create the directories that the specified sqlite file
+	// should reside in, if one.
+	d := strings.Split(connection, "/")
+	if len(d) > 1 {
+		dirpath := strings.Join(d[:len(d)-1], "/")
 
-			if err := os.MkdirAll(dirpath, 0755); err != nil {
-				return nil, err
-			}
-		}
-
-		// Check if a random value is required, which is often used for in-memory test databases.
-		if strings.Contains(connection, "$RAND") {
-			connection = strings.Replace(connection, "$RAND", fmt.Sprint(rand.Int()), 1)
+		if err := os.MkdirAll(dirpath, 0755); err != nil {
+			return nil, err
 		}
 	}
 
-	return sql.Open(driver, connection)
+	return sql.Open("sqlite3", replaceRand(connection))
+}
+
+// replaceRand substitutes $RAND in a connection string with a random value, which is used to give
+// each test process its own isolated database or schema.
+func replaceRand(connection string) string {
+	return strings.Replace(connection, "$RAND", fmt.Sprint(rand.Int()), 1)
 }

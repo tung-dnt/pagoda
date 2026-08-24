@@ -10,8 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/session"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/session"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,12 +64,25 @@ func AssertHTTPErrorCode(t *testing.T, err error, code int) {
 }
 
 // CreateUser creates a random user entity
-func CreateUser(orm *ent.Client) (*ent.User, error) {
+func CreateUser(db *pgdb.Queries) (*pgdb.User, error) {
 	seed := fmt.Sprintf("%d-%d", time.Now().UnixMilli(), rand.Intn(1000000))
-	return orm.User.
-		Create().
-		SetEmail(fmt.Sprintf("testuser-%s@localhost.localhost", seed)).
-		SetPassword("password").
-		SetName(fmt.Sprintf("Test User %s", seed)).
-		Save(context.Background())
+
+	// The password must be hashed prior to storage.
+	pw, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := db.CreateUser(context.Background(), pgdb.CreateUserParams{
+		Name:     fmt.Sprintf("Test User %s", seed),
+		Email:    fmt.Sprintf("testuser-%s@localhost.localhost", seed),
+		Password: string(pw),
+		Verified: false,
+		Admin:    false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
 }

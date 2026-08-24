@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/tests"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/pagoda/pkg/tests"
 
 	"github.com/stretchr/testify/assert"
 

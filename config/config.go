@@ -90,9 +90,18 @@ type (
 
 	// DatabaseConfig stores the database configuration.
 	DatabaseConfig struct {
-		Driver         string
-		Connection     string
+		// Connection is the PostgreSQL connection string used for application data.
+		Connection string
+
+		// TestConnection is the PostgreSQL connection string used when running tests.
+		// $RAND will be automatically replaced with a random value, which is used to give each test
+		// process its own throwaway schema via search_path.
 		TestConnection string
+
+		// TasksConnection is the SQLite connection string used by the task queue.
+		// Backlite is SQLite-only, so the queue keeps its own database separate from the one above.
+		// $RAND will be automatically replaced with a random value.
+		TasksConnection string
 	}
 
 	// FilesConfig stores the file system configuration.

@@ -1,0 +1,15 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "pkg/postgres/queries"
+    schema: "pkg/postgres/migrations"
+    gen:
+      go:
+        package: "pgdb"
+        out: "pkg/postgres/db"
+        sql_package: "pgx/v5"
+        emit_interface: true
+        emit_empty_slices: true
+        overrides:
+          - db_type: "timestamptz"
+            go_type: "time.Time"

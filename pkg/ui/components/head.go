@@ -3,7 +3,7 @@ package components
 import (
 	"strings"
 
-	"github.com/mikestefanello/pagoda/pkg/ui"
+	"github.com/tung-dnt/pagoda/pkg/ui"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

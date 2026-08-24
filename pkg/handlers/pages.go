@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/pkg/pager"
-	"github.com/mikestefanello/pagoda/pkg/routenames"
-	"github.com/mikestefanello/pagoda/pkg/services"
-	"github.com/mikestefanello/pagoda/pkg/ui/models"
-	"github.com/mikestefanello/pagoda/pkg/ui/pages"
+	"github.com/tung-dnt/pagoda/pkg/pager"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/ui/models"
+	"github.com/tung-dnt/pagoda/pkg/ui/pages"
 )
 
 type Pages struct{}

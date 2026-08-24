@@ -3,8 +3,8 @@ package components
 import (
 	"fmt"
 
-	"github.com/mikestefanello/pagoda/pkg/pager"
-	"github.com/mikestefanello/pagoda/pkg/ui"
+	"github.com/tung-dnt/pagoda/pkg/pager"
+	"github.com/tung-dnt/pagoda/pkg/ui"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/components"
 	. "maragu.dev/gomponents/html"

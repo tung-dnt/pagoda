@@ -8,12 +8,11 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/ent/passwordtoken"
-	"github.com/mikestefanello/pagoda/ent/user"
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/session"
+	"github.com/jackc/pgx/v5"
+	"github.com/tung-dnt/pagoda/config"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/session"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -49,19 +48,19 @@ func (e InvalidPasswordTokenError) Error() string {
 // AuthClient is the client that handles authentication requests
 type AuthClient struct {
 	config *config.Config
-	orm    *ent.Client
+	db     *pgdb.Queries
 }
 
 // NewAuthClient creates a new authentication client
-func NewAuthClient(cfg *config.Config, orm *ent.Client) *AuthClient {
+func NewAuthClient(cfg *config.Config, db *pgdb.Queries) *AuthClient {
 	return &AuthClient{
 		config: cfg,
-		orm:    orm,
+		db:     db,
 	}
 }
 
 // Login logs in a user of a given ID
-func (c *AuthClient) Login(ctx echo.Context, userID int) error {
+func (c *AuthClient) Login(ctx echo.Context, userID int64) error {
 	sess, err := session.Get(ctx, authSessionName)
 	if err != nil {
 		return err
@@ -82,28 +81,32 @@ func (c *AuthClient) Logout(ctx echo.Context) error {
 }
 
 // GetAuthenticatedUserID returns the authenticated user's ID, if the user is logged in
-func (c *AuthClient) GetAuthenticatedUserID(ctx echo.Context) (int, error) {
+func (c *AuthClient) GetAuthenticatedUserID(ctx echo.Context) (int64, error) {
 	sess, err := session.Get(ctx, authSessionName)
 	if err != nil {
 		return 0, err
 	}
 
 	if sess.Values[authSessionKeyAuthenticated] == true {
-		return sess.Values[authSessionKeyUserID].(int), nil
+		return sess.Values[authSessionKeyUserID].(int64), nil
 	}
 
 	return 0, NotAuthenticatedError{}
 }
 
 // GetAuthenticatedUser returns the authenticated user if the user is logged in
-func (c *AuthClient) GetAuthenticatedUser(ctx echo.Context) (*ent.User, error) {
-	if userID, err := c.GetAuthenticatedUserID(ctx); err == nil {
-		return c.orm.User.Query().
-			Where(user.ID(userID)).
-			Only(ctx.Request().Context())
+func (c *AuthClient) GetAuthenticatedUser(ctx echo.Context) (*pgdb.User, error) {
+	userID, err := c.GetAuthenticatedUserID(ctx)
+	if err != nil {
+		return nil, NotAuthenticatedError{}
 	}
 
-	return nil, NotAuthenticatedError{}
+	u, err := c.db.GetUser(ctx.Request().Context(), userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
 }
 
 // CheckPassword check if a given password matches a given hash
@@ -111,49 +114,66 @@ func (c *AuthClient) CheckPassword(password, hash string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 }
 
+// HashPassword hashes a plain-text password so that it can be stored in the database.
+// This must be called before persisting any password; nothing in the database layer hashes for you.
+func (c *AuthClient) HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
 // GeneratePasswordResetToken generates a password reset token for a given user.
 // For security purposes, the token itself is not stored in the database but rather
 // a hash of the token, exactly how passwords are handled. This method returns both
 // the generated token and the token entity which only contains the hash.
-func (c *AuthClient) GeneratePasswordResetToken(ctx echo.Context, userID int) (string, *ent.PasswordToken, error) {
+func (c *AuthClient) GeneratePasswordResetToken(ctx echo.Context, userID int64) (string, *pgdb.PasswordToken, error) {
 	// Generate the token, which is what will go in the URL, but not the database
 	token, err := c.RandomToken(c.config.App.PasswordToken.Length)
 	if err != nil {
 		return "", nil, err
 	}
 
-	// Create and save the password reset token
-	pt, err := c.orm.PasswordToken.
-		Create().
-		SetToken(token).
-		SetUserID(userID).
-		Save(ctx.Request().Context())
+	// Only ever store a hash of the token
+	hash, err := c.HashPassword(token)
+	if err != nil {
+		return "", nil, err
+	}
 
-	return token, pt, err
+	// Create and save the password reset token
+	pt, err := c.db.CreatePasswordToken(ctx.Request().Context(), pgdb.CreatePasswordTokenParams{
+		Token:  hash,
+		UserID: userID,
+	})
+	if err != nil {
+		return "", nil, err
+	}
+
+	return token, &pt, nil
 }
 
 // GetValidPasswordToken returns a valid, non-expired password token entity for a given user, token ID and token.
 // Since the actual token is not stored in the database for security purposes, if a matching password token entity is
 // found a hash of the provided token is compared with the hash stored in the database in order to validate.
-func (c *AuthClient) GetValidPasswordToken(ctx echo.Context, userID, tokenID int, token string) (*ent.PasswordToken, error) {
+func (c *AuthClient) GetValidPasswordToken(ctx echo.Context, userID, tokenID int64, token string) (*pgdb.PasswordToken, error) {
 	// Ensure expired tokens are never returned
 	expiration := time.Now().Add(-c.config.App.PasswordToken.Expiration)
 
 	// Query to find a password token entity that matches the given user and token ID
-	pt, err := c.orm.PasswordToken.
-		Query().
-		Where(passwordtoken.ID(tokenID)).
-		Where(passwordtoken.HasUserWith(user.ID(userID))).
-		Where(passwordtoken.CreatedAtGTE(expiration)).
-		Only(ctx.Request().Context())
+	pt, err := c.db.GetPasswordToken(ctx.Request().Context(), pgdb.GetPasswordTokenParams{
+		ID:           tokenID,
+		UserID:       userID,
+		CreatedAfter: expiration,
+	})
 
-	switch err.(type) {
-	case *ent.NotFoundError:
-	case nil:
+	switch {
+	case err == nil:
 		// Check the token for a hash match
 		if err := c.CheckPassword(token, pt.Token); err == nil {
-			return pt, nil
+			return &pt, nil
 		}
+	case errors.Is(err, pgx.ErrNoRows):
 	default:
 		if !context.IsCanceledError(err) {
 			return nil, err
@@ -165,13 +185,8 @@ func (c *AuthClient) GetValidPasswordToken(ctx echo.Context, userID, tokenID int
 
 // DeletePasswordTokens deletes all password tokens in the database for a belonging to a given user.
 // This should be called after a successful password reset.
-func (c *AuthClient) DeletePasswordTokens(ctx echo.Context, userID int) error {
-	_, err := c.orm.PasswordToken.
-		Delete().
-		Where(passwordtoken.HasUserWith(user.ID(userID))).
-		Exec(ctx.Request().Context())
-
-	return err
+func (c *AuthClient) DeletePasswordTokens(ctx echo.Context, userID int64) error {
+	return c.db.DeletePasswordTokensByUser(ctx.Request().Context(), userID)
 }
 
 // RandomToken generates a random token string of a given length

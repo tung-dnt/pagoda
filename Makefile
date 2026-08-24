@@ -21,12 +21,19 @@ endif
 # https://github.com/tailwindlabs/tailwindcss/releases/latest
 TAILWIND_PACKAGE = tailwindcss-$(OS_SYSNAME)-$(OS_MACHINE)
 
+# Where the golang-migrate migration files live. sqlc reads the same directory as its schema source.
+MIGRATIONS_DIR = pkg/postgres/migrations
+
+# Connection string used by the golang-migrate CLI targets. Override to point at another environment,
+# ie: make migrate-up DATABASE_URL="postgres://..."
+DATABASE_URL ?= postgres://pagoda:pagoda@localhost:5432/pagoda?sslmode=disable
+
 .PHONY: help
 help: ## Print make targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: install
-install: ent-install air-install tailwind-install ## Install all dependencies
+install: sqlc-install migrate-install air-install tailwind-install ## Install all dependencies
 
 .PHONY: tailwind-install
 tailwind-install: ## Install the Tailwind CSS CLI
@@ -35,21 +42,49 @@ tailwind-install: ## Install the Tailwind CSS CLI
 	curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
 	curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
 
-.PHONY: ent-install
-ent-install: ## Install Ent code-generation module
-	go get entgo.io/ent/cmd/ent
+.PHONY: sqlc-install
+sqlc-install: ## Install the sqlc code generator
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+.PHONY: migrate-install
+migrate-install: ## Install the golang-migrate CLI
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 .PHONY: air-install
 air-install: ## Install air
 	go install github.com/air-verse/air@latest
 
-.PHONY: ent-gen
-ent-gen: ## Generate Ent code
-	go generate ./ent
+.PHONY: db-up
+db-up: ## Start PostgreSQL via Docker
+	docker compose up -d postgres
 
-.PHONY: ent-new
-ent-new: ## Create a new Ent entity (ie, make ent-new name=MyEntity)
-	go run entgo.io/ent/cmd/ent new $(name)
+.PHONY: db-down
+db-down: ## Stop PostgreSQL
+	docker compose down
+
+.PHONY: sqlc-gen
+sqlc-gen: ## Generate type-safe Go code from the SQL queries
+	sqlc generate
+
+.PHONY: sqlc-vet
+sqlc-vet: ## Lint the SQL queries
+	sqlc vet
+
+.PHONY: migrate-new
+migrate-new: ## Create a new migration (ie, make migrate-new name=add_posts)
+	migrate create -ext sql -dir $(MIGRATIONS_DIR) -seq $(name)
+
+.PHONY: migrate-up
+migrate-up: ## Apply all pending migrations
+	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" up
+
+.PHONY: migrate-down
+migrate-down: ## Roll back the most recent migration
+	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" down 1
+
+.PHONY: migrate-force
+migrate-force: ## Clear a dirty migration state (ie, make migrate-force version=1)
+	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" force $(version)
 
 .PHONY: admin
 admin: ## Create a new admin user (ie, make admin email=myemail@web.com)
@@ -66,7 +101,7 @@ watch: ## Run the application and watch for changes with air to automatically re
 	air
 
 .PHONY: test
-test: ## Run all tests
+test: ## Run all tests (requires PostgreSQL, see `make db-up`)
 	go test ./...
 
 .PHONY: check-updates

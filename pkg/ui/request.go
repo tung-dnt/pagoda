@@ -2,10 +2,10 @@ package ui
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/htmx"
+	"github.com/tung-dnt/pagoda/config"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/pagoda/pkg/htmx"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
 	"maragu.dev/gomponents"
 )
 
@@ -32,7 +32,7 @@ type (
 		IsAdmin bool
 
 		// AuthUser stores the authenticated user.
-		AuthUser *ent.User
+		AuthUser *pgdb.User
 
 		// Metatags stores metatag values.
 		Metatags struct {
@@ -79,7 +79,7 @@ func NewRequest(ctx echo.Context) *Request {
 
 	if u := ctx.Get(context.AuthenticatedUserKey); u != nil {
 		p.IsAuth = true
-		p.AuthUser = u.(*ent.User)
+		p.AuthUser = u.(*pgdb.User)
 		p.IsAdmin = p.AuthUser.Admin
 	}
 

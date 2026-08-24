@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mikestefanello/pagoda/ent/passwordtoken"
-	"github.com/mikestefanello/pagoda/ent/user"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/stretchr/testify/require"
@@ -71,13 +69,14 @@ func TestAuthClient_GetValidPasswordToken(t *testing.T) {
 	assert.Equal(t, pt.ID, pt2.ID)
 
 	// Expire the token by pushing the date far enough back
-	count, err := c.ORM.PasswordToken.
-		Update().
-		SetCreatedAt(time.Now().Add(-(c.Config.App.PasswordToken.Expiration + time.Hour))).
-		Where(passwordtoken.ID(pt.ID)).
-		Save(context.Background())
+	res, err := c.Database.Exec(
+		context.Background(),
+		"UPDATE password_tokens SET created_at = $1 WHERE id = $2",
+		time.Now().Add(-(c.Config.App.PasswordToken.Expiration + time.Hour)),
+		pt.ID,
+	)
 	require.NoError(t, err)
-	require.Equal(t, 1, count)
+	require.Equal(t, int64(1), res.RowsAffected())
 
 	// Expired tokens should not be valid
 	_, err = c.Auth.GetValidPasswordToken(ctx, usr.ID, pt.ID, token)
@@ -96,10 +95,12 @@ func TestAuthClient_DeletePasswordTokens(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that no tokens remain
-	count, err := c.ORM.PasswordToken.
-		Query().
-		Where(passwordtoken.HasUserWith(user.ID(usr.ID))).
-		Count(context.Background())
+	var count int
+	err = c.Database.QueryRow(
+		context.Background(),
+		"SELECT COUNT(*) FROM password_tokens WHERE user_id = $1",
+		usr.ID,
+	).Scan(&count)
 
 	require.NoError(t, err)
 	assert.Equal(t, 0, count)

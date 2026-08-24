@@ -2,12 +2,12 @@ package pages
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/pkg/routenames"
-	"github.com/mikestefanello/pagoda/pkg/ui"
-	. "github.com/mikestefanello/pagoda/pkg/ui/components"
-	"github.com/mikestefanello/pagoda/pkg/ui/icons"
-	"github.com/mikestefanello/pagoda/pkg/ui/layouts"
-	"github.com/mikestefanello/pagoda/pkg/ui/models"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/ui"
+	. "github.com/tung-dnt/pagoda/pkg/ui/components"
+	"github.com/tung-dnt/pagoda/pkg/ui/icons"
+	"github.com/tung-dnt/pagoda/pkg/ui/layouts"
+	"github.com/tung-dnt/pagoda/pkg/ui/models"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )
@@ -89,7 +89,7 @@ func Home(ctx echo.Context, posts *models.Posts) error {
 					Text("Have you read through the entire documentation? If not, you may be missing functionality or have questions. "),
 				},
 				Footer: Group{
-					ButtonLink(ColorNeutral, "https://github.com/mikestefanello/pagoda?tab=readme-ov-file#table-of-contents", "Learn more"),
+					ButtonLink(ColorNeutral, "https://github.com/tung-dnt/pagoda?tab=readme-ov-file#table-of-contents", "Learn more"),
 				},
 				Color: ColorNeutral,
 				Size:  SizeSmall,

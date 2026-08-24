@@ -1,32 +1,36 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
-	"github.com/mikestefanello/pagoda/config"
-	"github.com/mikestefanello/pagoda/ent"
-	"github.com/mikestefanello/pagoda/ent/user"
-	"github.com/mikestefanello/pagoda/pkg/context"
-	"github.com/mikestefanello/pagoda/pkg/form"
-	"github.com/mikestefanello/pagoda/pkg/log"
-	"github.com/mikestefanello/pagoda/pkg/middleware"
-	"github.com/mikestefanello/pagoda/pkg/msg"
-	"github.com/mikestefanello/pagoda/pkg/redirect"
-	"github.com/mikestefanello/pagoda/pkg/routenames"
-	"github.com/mikestefanello/pagoda/pkg/services"
-	"github.com/mikestefanello/pagoda/pkg/ui/emails"
-	"github.com/mikestefanello/pagoda/pkg/ui/forms"
-	"github.com/mikestefanello/pagoda/pkg/ui/pages"
+	"github.com/tung-dnt/pagoda/config"
+	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/pagoda/pkg/form"
+	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/pagoda/pkg/middleware"
+	"github.com/tung-dnt/pagoda/pkg/msg"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/pkg/redirect"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/ui/emails"
+	"github.com/tung-dnt/pagoda/pkg/ui/forms"
+	"github.com/tung-dnt/pagoda/pkg/ui/pages"
 )
+
+// uniqueViolation is the Postgres error code for a unique constraint violation.
+const uniqueViolation = "23505"
 
 type Auth struct {
 	config *config.Config
 	auth   *services.AuthClient
 	mail   *services.MailClient
-	orm    *ent.Client
+	db     *pgdb.Queries
 }
 
 func init() {
@@ -35,7 +39,7 @@ func init() {
 
 func (h *Auth) Init(c *services.Container) error {
 	h.config = c.Config
-	h.orm = c.ORM
+	h.db = c.Queries
 	h.auth = c.Auth
 	h.mail = c.Mail
 	return nil
@@ -54,7 +58,7 @@ func (h *Auth) Routes(g *echo.Group) {
 	noAuth.POST("/password", h.ForgotPasswordSubmit).Name = routenames.ForgotPasswordSubmit
 
 	resetGroup := noAuth.Group("/password/reset",
-		middleware.LoadUser(h.orm),
+		middleware.LoadUser(h.db),
 		middleware.LoadValidPasswordToken(h.auth),
 	)
 	resetGroup.GET("/token/:user/:password_token/:token", h.ResetPasswordPage).Name = routenames.ResetPassword
@@ -85,16 +89,11 @@ func (h *Auth) ForgotPasswordSubmit(ctx echo.Context) error {
 	}
 
 	// Attempt to load the user.
-	u, err := h.orm.User.
-		Query().
-		Where(user.Email(strings.ToLower(input.Email))).
-		Only(ctx.Request().Context())
-
-	switch err.(type) {
-	case *ent.NotFoundError:
-		return succeed()
-	case nil:
-	default:
+	u, err := h.db.GetUserByEmail(ctx.Request().Context(), input.Email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return succeed()
+		}
 		return fail(err, "error querying user during forgot password")
 	}
 
@@ -149,16 +148,11 @@ func (h *Auth) LoginSubmit(ctx echo.Context) error {
 	}
 
 	// Attempt to load the user.
-	u, err := h.orm.User.
-		Query().
-		Where(user.Email(strings.ToLower(input.Email))).
-		Only(ctx.Request().Context())
-
-	switch err.(type) {
-	case *ent.NotFoundError:
-		return authFailed()
-	case nil:
-	default:
+	u, err := h.db.GetUserByEmail(ctx.Request().Context(), input.Email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return authFailed()
+		}
 		return fail(err, "error querying user during login")
 	}
 
@@ -209,28 +203,36 @@ func (h *Auth) RegisterSubmit(ctx echo.Context) error {
 		return err
 	}
 
-	// Attempt creating the user.
-	u, err := h.orm.User.
-		Create().
-		SetName(input.Name).
-		SetEmail(input.Email).
-		SetPassword(input.Password).
-		Save(ctx.Request().Context())
+	// Hash the password before storing it.
+	hashed, err := h.auth.HashPassword(input.Password)
+	if err != nil {
+		return fail(err, "unable to hash password")
+	}
 
-	switch err.(type) {
-	case nil:
-		log.Ctx(ctx).Info("user created",
-			"user_name", u.Name,
-			"user_id", u.ID,
-		)
-	case *ent.ConstraintError:
-		msg.Warning(ctx, "A user with this email address already exists. Please log in.")
-		return redirect.New(ctx).
-			Route(routenames.Login).
-			Go()
-	default:
+	// Attempt creating the user.
+	u, err := h.db.CreateUser(ctx.Request().Context(), pgdb.CreateUserParams{
+		Name:     input.Name,
+		Email:    input.Email,
+		Password: hashed,
+		Verified: false,
+		Admin:    false,
+	})
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == uniqueViolation {
+			msg.Warning(ctx, "A user with this email address already exists. Please log in.")
+			return redirect.New(ctx).
+				Route(routenames.Login).
+				Go()
+		}
 		return fail(err, "unable to create user")
 	}
+
+	log.Ctx(ctx).Info("user created",
+		"user_name", u.Name,
+		"user_id", u.ID,
+	)
 
 	// Log the user in.
 	err = h.auth.Login(ctx, u.ID)
@@ -248,14 +250,14 @@ func (h *Auth) RegisterSubmit(ctx echo.Context) error {
 	msg.Success(ctx, "Your account has been created. You are now logged in.")
 
 	// Send the verification email.
-	h.sendVerificationEmail(ctx, u)
+	h.sendVerificationEmail(ctx, &u)
 
 	return redirect.New(ctx).
 		Route(routenames.Home).
 		Go()
 }
 
-func (h *Auth) sendVerificationEmail(ctx echo.Context, usr *ent.User) {
+func (h *Auth) sendVerificationEmail(ctx echo.Context, usr *pgdb.User) {
 	// Generate a token.
 	token, err := h.auth.GenerateEmailVerificationToken(usr.Email)
 	if err != nil {
@@ -303,13 +305,19 @@ func (h *Auth) ResetPasswordSubmit(ctx echo.Context) error {
 	}
 
 	// Get the requesting user.
-	usr := ctx.Get(context.UserKey).(*ent.User)
+	usr := ctx.Get(context.UserKey).(*pgdb.User)
+
+	// Hash the password before storing it.
+	hashed, err := h.auth.HashPassword(input.Password)
+	if err != nil {
+		return fail(err, "unable to hash password")
+	}
 
 	// Update the user.
-	_, err = usr.
-		Update().
-		SetPassword(input.Password).
-		Save(ctx.Request().Context())
+	_, err = h.db.UpdateUserPassword(ctx.Request().Context(), pgdb.UpdateUserPasswordParams{
+		Password: hashed,
+		ID:       usr.ID,
+	})
 
 	if err != nil {
 		return fail(err, "unable to update password")
@@ -328,7 +336,7 @@ func (h *Auth) ResetPasswordSubmit(ctx echo.Context) error {
 }
 
 func (h *Auth) VerifyEmail(ctx echo.Context) error {
-	var usr *ent.User
+	var usr *pgdb.User
 
 	// Validate the token.
 	token := ctx.Param("token")
@@ -342,7 +350,7 @@ func (h *Auth) VerifyEmail(ctx echo.Context) error {
 
 	// Check if it matches the authenticated user.
 	if u := ctx.Get(context.AuthenticatedUserKey); u != nil {
-		authUser := u.(*ent.User)
+		authUser := u.(*pgdb.User)
 
 		if authUser.Email == email {
 			usr = authUser
@@ -351,26 +359,22 @@ func (h *Auth) VerifyEmail(ctx echo.Context) error {
 
 	// Query to find a matching user, if needed.
 	if usr == nil {
-		usr, err = h.orm.User.
-			Query().
-			Where(user.Email(email)).
-			Only(ctx.Request().Context())
-
+		u, err := h.db.GetUserByEmail(ctx.Request().Context(), email)
 		if err != nil {
 			return fail(err, "query failed loading email verification token user")
 		}
+
+		usr = &u
 	}
 
 	// Verify the user, if needed.
 	if !usr.Verified {
-		usr, err = usr.
-			Update().
-			SetVerified(true).
-			Save(ctx.Request().Context())
-
+		u, err := h.db.SetUserVerified(ctx.Request().Context(), usr.ID)
 		if err != nil {
 			return fail(err, "failed to set user as verified")
 		}
+
+		usr = &u
 	}
 
 	msg.Success(ctx, "Your email has been successfully verified.")
