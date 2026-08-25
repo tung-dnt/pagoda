@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 )
 
 func TestConfig(t *testing.T) {

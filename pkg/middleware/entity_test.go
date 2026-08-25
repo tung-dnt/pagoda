@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/tung-dnt/pagoda/pkg/context"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

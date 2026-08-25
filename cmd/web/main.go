@@ -9,10 +9,10 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/tung-dnt/pagoda/pkg/handlers"
-	"github.com/tung-dnt/pagoda/pkg/log"
-	"github.com/tung-dnt/pagoda/pkg/services"
-	"github.com/tung-dnt/pagoda/pkg/tasks"
+	"github.com/tung-dnt/meme-app/pkg/handlers"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/tasks"
 )
 
 func main() {

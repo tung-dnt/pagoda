@@ -6,8 +6,8 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tung-dnt/pagoda/pkg/session"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/session"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 )
 
 func TestSession(t *testing.T) {

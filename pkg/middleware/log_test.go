@@ -8,8 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/require"
-	"github.com/tung-dnt/pagoda/pkg/log"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 
 	"github.com/stretchr/testify/assert"
 )

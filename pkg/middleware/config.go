@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/context"
 )
 
 // Config stores the configuration in the request so it can be accessed by the ui.

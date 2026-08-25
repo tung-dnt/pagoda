@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/mikestefanello/backlite"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
 
-	"github.com/tung-dnt/pagoda/pkg/log"
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/services"
 )
 
 // ExampleTask is an example implementation of backlite.Task.

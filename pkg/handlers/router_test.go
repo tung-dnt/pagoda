@@ -8,8 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/services"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/stretchr/testify/assert"

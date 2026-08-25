@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/tung-dnt/pagoda/pkg/log"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/services"
 )
 
 // main creates a new admin user with the email passed in via the flag.

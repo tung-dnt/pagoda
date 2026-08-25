@@ -5,10 +5,10 @@ import (
 	"math/rand"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
-	"github.com/tung-dnt/pagoda/pkg/services"
-	"github.com/tung-dnt/pagoda/pkg/ui/models"
-	"github.com/tung-dnt/pagoda/pkg/ui/pages"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/ui/models"
+	"github.com/tung-dnt/meme-app/pkg/ui/pages"
 )
 
 type Search struct{}
@@ -29,7 +29,7 @@ func (h *Search) Page(ctx echo.Context) error {
 	// Fake search results.
 	results := make([]*models.SearchResult, 0, 5)
 	if search := ctx.QueryParam("query"); search != "" {
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			title := "Lorem ipsum example ddolor sit amet"
 			index := rand.Intn(len(title))
 			title = title[:index] + search + title[index:]

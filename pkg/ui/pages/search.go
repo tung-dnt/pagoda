@@ -2,9 +2,9 @@ package pages
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/ui"
-	"github.com/tung-dnt/pagoda/pkg/ui/layouts"
-	"github.com/tung-dnt/pagoda/pkg/ui/models"
+	"github.com/tung-dnt/meme-app/pkg/ui"
+	"github.com/tung-dnt/meme-app/pkg/ui/layouts"
+	"github.com/tung-dnt/meme-app/pkg/ui/models"
 	. "maragu.dev/gomponents"
 )
 

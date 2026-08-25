@@ -8,8 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tung-dnt/pagoda/pkg/htmx"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/htmx"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 )
 
 func TestRedirect(t *testing.T) {

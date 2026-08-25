@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
-	"github.com/tung-dnt/pagoda/pkg/ui"
-	"github.com/tung-dnt/pagoda/pkg/ui/layouts"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/ui"
+	"github.com/tung-dnt/meme-app/pkg/ui/layouts"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

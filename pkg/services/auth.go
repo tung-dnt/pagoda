@@ -9,10 +9,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
-	"github.com/tung-dnt/pagoda/pkg/session"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/session"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"

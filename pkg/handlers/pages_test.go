@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
 )
 
 // Simple example of how to test routes and their markup using the test HTTP server spun up within

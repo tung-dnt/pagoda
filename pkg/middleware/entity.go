@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
 
 	"github.com/labstack/echo/v4"
 )

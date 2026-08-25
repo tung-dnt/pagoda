@@ -3,9 +3,9 @@ package forms
 import (
 	"net/http"
 
-	"github.com/tung-dnt/pagoda/pkg/form"
-	"github.com/tung-dnt/pagoda/pkg/ui"
-	. "github.com/tung-dnt/pagoda/pkg/ui/components"
+	"github.com/tung-dnt/meme-app/pkg/form"
+	"github.com/tung-dnt/meme-app/pkg/ui"
+	. "github.com/tung-dnt/meme-app/pkg/ui/components"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

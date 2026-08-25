@@ -8,6 +8,8 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -69,14 +71,12 @@ func TestAuthClient_GetValidPasswordToken(t *testing.T) {
 	assert.Equal(t, pt.ID, pt2.ID)
 
 	// Expire the token by pushing the date far enough back
-	res, err := c.Database.Exec(
-		context.Background(),
-		"UPDATE password_tokens SET created_at = $1 WHERE id = $2",
-		time.Now().Add(-(c.Config.App.PasswordToken.Expiration + time.Hour)),
-		pt.ID,
-	)
+	rows, err := c.Queries.UpdatePasswordTokenCreatedAt(context.Background(), pgdb.UpdatePasswordTokenCreatedAtParams{
+		CreatedAt: time.Now().Add(-(c.Config.App.PasswordToken.Expiration + time.Hour)),
+		ID:        pt.ID,
+	})
 	require.NoError(t, err)
-	require.Equal(t, int64(1), res.RowsAffected())
+	require.Equal(t, int64(1), rows)
 
 	// Expired tokens should not be valid
 	_, err = c.Auth.GetValidPasswordToken(ctx, usr.ID, pt.ID, token)
@@ -85,7 +85,7 @@ func TestAuthClient_GetValidPasswordToken(t *testing.T) {
 
 func TestAuthClient_DeletePasswordTokens(t *testing.T) {
 	// Create three tokens for the user
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		_, _, err := c.Auth.GeneratePasswordResetToken(ctx, usr.ID)
 		require.NoError(t, err)
 	}
@@ -95,15 +95,9 @@ func TestAuthClient_DeletePasswordTokens(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that no tokens remain
-	var count int
-	err = c.Database.QueryRow(
-		context.Background(),
-		"SELECT COUNT(*) FROM password_tokens WHERE user_id = $1",
-		usr.ID,
-	).Scan(&count)
-
+	count, err := c.Queries.CountPasswordTokensByUser(context.Background(), usr.ID)
 	require.NoError(t, err)
-	assert.Equal(t, 0, count)
+	assert.Equal(t, int64(0), count)
 }
 
 func TestAuthClient_RandomToken(t *testing.T) {

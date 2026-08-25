@@ -6,8 +6,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 )
 
 type mockForm struct {

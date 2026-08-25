@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 
 	"github.com/stretchr/testify/assert"
 )

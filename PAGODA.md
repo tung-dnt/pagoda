@@ -120,7 +120,7 @@ While many great projects were used to build this, all of which are listed in th
 
 - [Echo](https://echo.labstack.com/): High performance, extensible, minimalist Go web framework.
 - [sqlc](https://sqlc.dev/): Generates fully type-safe, idiomatic Go code from plain SQL.
-- [golang-migrate](https://github.com/golang-migrate/migrate): Database schema migrations, embedded in the binary and applied on startup.
+- [golang-migrate](https://github.com/golang-migrate/migrate): Database schema migrations, embedded in the binary and applied with the `migrate-*` make targets.
 - [Gomponents](https://github.com/maragudk/gomponents): HTML components written in pure Go. They render to HTML 5, and make it easy for you to build reusable components.
 
 #### Frontend
@@ -179,7 +179,9 @@ Several optional tools are available to make development easier for you. This in
 
 If you don't want to use Tailwind and/or [Daisy UI](https://daisyui.com/), or don't want to use Tailwind's standalone CLI, but rather `npm`, for example, modify the `tailwind-install` and `css` [make targets](https://github.com/mikestefanello/pagoda/blob/main/Makefile) based on your preferences. If the script cannot automatically determine the proper Tailwind package to install, modify the `TAILWIND_PACKAGE` variable to match your operating system.
 
-To easily install all tools, run `make install` from the root of the repo. There are also separate _make targets_ for each tool (run `make help` to list all targets).
+The Go tools are pinned by this module and require no installation step. `sqlc` and `air` are declared in the `tool` directive of `go.mod` and are built on demand by the make targets that use them (`go tool sqlc`, `go tool air`). The `golang-migrate` CLI needs its database driver selected with a build tag, which `go tool` cannot pass, so it is run via `go run -tags pgx5 github.com/golang-migrate/migrate/v4/cmd/migrate` -- pinned to the same `migrate/v4` version the application already depends on.
+
+Run `make install` from the root of the repo to set everything up: it downloads the Go modules (`make deps-install`, which also pre-builds the pinned tools so their first use is instant) and the Tailwind CLI binary (`make tailwind-install`). Run `make help` to list all targets.
 
 ### Create an admin account
 
@@ -191,7 +193,7 @@ Run the same command again for any further admin accounts you need. Note that th
 
 From within the root of the codebase, simply run `make run`.
 
-Postgres must be running first -- use `make db-up` if you are using the included `docker-compose.yml`. Any pending [migrations](#migrations) are applied automatically when the app starts.
+Postgres must be running first -- use `make db-up` if you are using the included `docker-compose.yml`. Apply any pending [migrations](#migrations) with `make migrate-up` before starting; the application does not migrate the database itself.
 
 By default, you should be able to access the application in your browser at `localhost:8000`. Application data is stored in Postgres; the [task queue](#tasks) database is stored within the `dbs` directory.
 
@@ -199,7 +201,7 @@ These settings, and many others, can be changed via the [configuration](#configu
 
 ### Live reloading
 
-Rather than using `make run`, if you prefer live reloading so your app automatically rebuilds and runs whenever you save code changes, start by installing [Air](https://github.com/air-verse/air), if you haven't already, by running `make air-install` (or `make install` to install all tools), then use `make watch` to start the application with automatic live reloading.
+Rather than using `make run`, if you prefer live reloading so your app automatically rebuilds and runs whenever you save code changes, use `make watch` to start the application with automatic live reloading. [Air](https://github.com/air-verse/air) is declared in the `tool` directive of `go.mod`, so `go tool air` builds it on demand -- there is nothing to install.
 
 When code changes are detected, `make css` will run to re-compile Tailwind styles automatically before restarting the app. If you choose not to use Tailwind, either modify `make css` to run whatever commands you require, or remove this from the `make build` target.
 
@@ -283,7 +285,7 @@ Database configuration can be found and managed within the `config` package.
 
 ### Migrations
 
-Schema migrations are managed by [golang-migrate](https://github.com/golang-migrate/migrate) and live in `pkg/postgres/migrations`. They are embedded into the binary with `go:embed` and applied automatically whenever the `Container` is created, which means they run when the application starts. No migration CLI is required at runtime.
+Schema migrations are managed by [golang-migrate](https://github.com/golang-migrate/migrate) and live in `pkg/postgres/migrations`. They are embedded into the binary with `go:embed` and exposed as `postgres.Migrate()`, but the application does **not** apply them on startup -- schema changes are rolled out deliberately with `make migrate-up`. The one exception is the test environment: each test process creates a disposable, randomly-named schema and migrates it in `Container.initDatabase()`, so tests always run against an up-to-date schema and drop it again on shutdown.
 
 Migration files follow golang-migrate's naming convention, with a paired _up_ and _down_ file per version:
 
@@ -334,7 +336,7 @@ pkg/postgres/
 ├── migrations/                  # golang-migrate files; also sqlc's schema source
 ├── queries/                     # hand-written SQL -- the source of the generated code
 ├── db/                          # GENERATED by sqlc (package pgdb) -- never edit by hand
-└── migrate.go                   # embeds migrations and applies them on startup
+└── migrate.go                   # embeds the migrations and exposes Migrate()
 ```
 
 Note that sqlc reads the _migrations_ directory as its schema source, so the generated code always matches the migrated schema. Files ending in `.down.sql` are ignored by sqlc.
@@ -387,14 +389,6 @@ token, err := c.Queries.GetPasswordToken(ctx.Request().Context(), pgdb.GetPasswo
 This returns the _password token_ row with a given ID that belongs to a user with a given ID and has a _created at_ timestamp that is greater than or equal to a given time. If no row matches, the error will be `pgx.ErrNoRows`, which is the sentinel to check with `errors.Is()`.
 
 `make sqlc-vet` is also available to lint your queries.
-
-### Things an ORM would do for you
-
-Ent, the ORM previously used here, supported schema _hooks_ that silently enforced invariants before every write. sqlc deliberately does no such thing -- it only runs the SQL you wrote. Three invariants are therefore now explicit, and it is important to know where they live:
-
-- **Email lowercasing** is enforced in SQL, via `LOWER()` in the `users` queries. Callers must _not_ lowercase email addresses themselves.
-- **Password hashing** is not automatic. Call `AuthClient.HashPassword()` before persisting a password. Nothing in the data layer will hash it for you, and a plain-text password will be stored quite happily if you forget.
-- **Password reset token hashing** happens inside `AuthClient.GeneratePasswordResetToken()`, so only a `bcrypt` hash of the token is ever stored.
 
 ## Sessions
 

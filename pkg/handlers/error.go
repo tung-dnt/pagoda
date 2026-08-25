@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	"github.com/tung-dnt/pagoda/pkg/log"
-	"github.com/tung-dnt/pagoda/pkg/ui/pages"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/ui/pages"
 )
 
 type Error struct{}

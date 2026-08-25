@@ -65,7 +65,7 @@ reusing the `$RAND` convention the SQLite test DB already used. `postgres.Drop` 
   authoritative description of the new setup and points this out.
 
 ### Module rename + an unexplained file deletion (resolved)
-Mid-session the module was renamed to `github.com/tung-dnt/memeapp`. I initially attributed this to
+Mid-session the module was renamed to `github.com/tung-dnt/meme-app`. I initially attributed this to
 session meme-app-9f; that was WRONG -- it confirmed it never touched this repo. The rename is now
 complete (go.mod + all imports) and the build is clean. Author unknown.
 

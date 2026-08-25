@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/services"
 )
 
 var handlers []Handler

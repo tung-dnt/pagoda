@@ -7,12 +7,12 @@ import (
 	"strconv"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	"github.com/tung-dnt/pagoda/pkg/log"
-	"github.com/tung-dnt/pagoda/pkg/msg"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/msg"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/services"
 
 	"github.com/labstack/echo/v4"
 )

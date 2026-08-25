@@ -1,11 +1,11 @@
 package layouts
 
 import (
-	"github.com/tung-dnt/pagoda/pkg/routenames"
-	"github.com/tung-dnt/pagoda/pkg/ui"
-	"github.com/tung-dnt/pagoda/pkg/ui/cache"
-	. "github.com/tung-dnt/pagoda/pkg/ui/components"
-	"github.com/tung-dnt/pagoda/pkg/ui/icons"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/ui"
+	"github.com/tung-dnt/meme-app/pkg/ui/cache"
+	. "github.com/tung-dnt/meme-app/pkg/ui/components"
+	"github.com/tung-dnt/meme-app/pkg/ui/icons"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

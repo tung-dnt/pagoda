@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/log"
 	"maragu.dev/gomponents"
 )
 

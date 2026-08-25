@@ -14,10 +14,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikestefanello/backlite"
 	"github.com/spf13/afero"
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/log"
-	"github.com/tung-dnt/pagoda/pkg/postgres"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/log"
+	"github.com/tung-dnt/meme-app/pkg/postgres"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
 )
 
 // Container contains all services used by the application and provides an easy way to handle dependency
@@ -34,9 +34,6 @@ type Container struct {
 
 	// Cache contains the cache client.
 	Cache *CacheClient
-
-	// Database stores the connection pool to the PostgreSQL database.
-	Database *pgxpool.Pool
 
 	// Queries stores the sqlc-generated querier for the application database.
 	Queries *pgdb.Queries
@@ -91,9 +88,6 @@ func (c *Container) Shutdown() error {
 	taskCtx, taskCancel := context.WithTimeout(context.Background(), c.Config.Tasks.ShutdownTimeout)
 	defer taskCancel()
 	c.Tasks.Stop(taskCtx)
-
-	// Shutdown the database.
-	c.Database.Close()
 
 	// Discard the disposable schema this test run created.
 	if c.Config.App.Environment == config.EnvTest {
@@ -152,7 +146,10 @@ func (c *Container) initCache() {
 	c.Cache = NewCacheClient(store)
 }
 
-// initDatabase initializes the PostgreSQL database, applying any pending migrations.
+// initDatabase initializes the PostgreSQL database. Migrations are deliberately NOT applied here for
+// real environments -- schema changes are rolled out separately via the migrate-* make targets. The
+// test environment is the exception: its schema is disposable and created from scratch on each run,
+// so it has to be migrated before any queries can run against it.
 func (c *Container) initDatabase() {
 	c.databaseConnection = c.Config.Database.Connection
 
@@ -165,10 +162,12 @@ func (c *Container) initDatabase() {
 		if err := postgres.CreateSchema(c.databaseConnection); err != nil {
 			panic(fmt.Sprintf("failed to create test schema: %v", err))
 		}
-	}
 
-	if err := postgres.Migrate(c.databaseConnection); err != nil {
-		panic(fmt.Sprintf("failed to migrate database: %v", err))
+		// The schema was just created and is therefore empty. Build it out with the same embedded
+		// migrations the migrate-* make targets apply, so tests run against the real schema.
+		if err := postgres.Migrate(c.databaseConnection); err != nil {
+			panic(fmt.Sprintf("failed to migrate test schema: %v", err))
+		}
 	}
 
 	pool, err := pgxpool.New(context.Background(), c.databaseConnection)
@@ -180,7 +179,6 @@ func (c *Container) initDatabase() {
 		panic(fmt.Sprintf("failed to ping database: %v", err))
 	}
 
-	c.Database = pool
 	c.Queries = pgdb.New(pool)
 }
 

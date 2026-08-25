@@ -2,10 +2,10 @@ package ui
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/context"
-	"github.com/tung-dnt/pagoda/pkg/htmx"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	"github.com/tung-dnt/meme-app/pkg/htmx"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
 	"maragu.dev/gomponents"
 )
 

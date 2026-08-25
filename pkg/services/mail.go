@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/tung-dnt/pagoda/config"
-	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/meme-app/config"
+	"github.com/tung-dnt/meme-app/pkg/log"
 	"maragu.dev/gomponents"
 
 	"github.com/labstack/echo/v4"

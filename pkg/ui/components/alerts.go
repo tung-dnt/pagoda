@@ -1,9 +1,9 @@
 package components
 
 import (
-	"github.com/tung-dnt/pagoda/pkg/msg"
-	"github.com/tung-dnt/pagoda/pkg/ui"
-	"github.com/tung-dnt/pagoda/pkg/ui/icons"
+	"github.com/tung-dnt/meme-app/pkg/msg"
+	"github.com/tung-dnt/meme-app/pkg/ui"
+	"github.com/tung-dnt/meme-app/pkg/ui/icons"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

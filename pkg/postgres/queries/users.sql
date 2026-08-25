@@ -28,3 +28,9 @@ UPDATE users
 SET verified = TRUE
 WHERE id = $1
 RETURNING *;
+
+-- name: SetUserAdmin :one
+UPDATE users
+SET admin = sqlc.arg(admin)::boolean
+WHERE id = sqlc.arg(id)::bigint
+RETURNING *;

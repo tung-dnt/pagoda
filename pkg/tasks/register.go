@@ -1,7 +1,7 @@
 package tasks
 
 import (
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/services"
 )
 
 // Register registers all task queues with the task client.

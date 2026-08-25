@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tung-dnt/pagoda/config"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/config"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 
 	"github.com/labstack/echo/v4"
 )

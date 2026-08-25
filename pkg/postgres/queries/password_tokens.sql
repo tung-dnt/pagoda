@@ -12,3 +12,12 @@ WHERE id = sqlc.arg(id)::bigint
 -- name: DeletePasswordTokensByUser :exec
 DELETE FROM password_tokens
 WHERE user_id = $1;
+
+-- name: UpdatePasswordTokenCreatedAt :execrows
+UPDATE password_tokens
+SET created_at = sqlc.arg(created_at)::timestamptz
+WHERE id = sqlc.arg(id)::bigint;
+
+-- name: CountPasswordTokensByUser :one
+SELECT COUNT(*) FROM password_tokens
+WHERE user_id = $1;

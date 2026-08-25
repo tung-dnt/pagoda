@@ -3,7 +3,7 @@ package components
 import (
 	"fmt"
 
-	"github.com/tung-dnt/pagoda/pkg/ui"
+	"github.com/tung-dnt/meme-app/pkg/ui"
 	. "maragu.dev/gomponents"
 	. "maragu.dev/gomponents/html"
 )

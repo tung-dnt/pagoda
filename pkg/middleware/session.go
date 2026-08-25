@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/session"
+	"github.com/tung-dnt/meme-app/pkg/session"
 )
 
 // Session sets the session storage in the request context

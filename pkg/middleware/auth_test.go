@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/tung-dnt/pagoda/pkg/context"
-	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
-	"github.com/tung-dnt/pagoda/pkg/tests"
+	"github.com/tung-dnt/meme-app/pkg/context"
+	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/meme-app/pkg/tests"
 
 	"github.com/stretchr/testify/require"
 
@@ -131,11 +131,10 @@ func TestRequireAdmin(t *testing.T) {
 	// Create an admin and login
 	adm, err := tests.CreateUser(c.Queries)
 	require.NoError(t, err)
-	_, err = c.Database.Exec(
-		goctx.Background(),
-		"UPDATE users SET admin = TRUE WHERE id = $1",
-		adm.ID,
-	)
+	_, err = c.Queries.SetUserAdmin(goctx.Background(), pgdb.SetUserAdminParams{
+		Admin: true,
+		ID:    adm.ID,
+	})
 	require.NoError(t, err)
 	err = c.Auth.Login(ctx, adm.ID)
 	require.NoError(t, err)

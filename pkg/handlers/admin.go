@@ -5,9 +5,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/mikestefanello/backlite/ui"
-	"github.com/tung-dnt/pagoda/pkg/middleware"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
-	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/middleware"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/services"
 )
 
 type Admin struct {

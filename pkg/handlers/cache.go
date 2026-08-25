@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/form"
-	"github.com/tung-dnt/pagoda/pkg/routenames"
-	"github.com/tung-dnt/pagoda/pkg/services"
-	"github.com/tung-dnt/pagoda/pkg/ui/forms"
-	"github.com/tung-dnt/pagoda/pkg/ui/pages"
+	"github.com/tung-dnt/meme-app/pkg/form"
+	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/meme-app/pkg/services"
+	"github.com/tung-dnt/meme-app/pkg/ui/forms"
+	"github.com/tung-dnt/meme-app/pkg/ui/pages"
 )
 
 type Cache struct {

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/pagoda/pkg/context"
+	"github.com/tung-dnt/meme-app/pkg/context"
 )
 
 // Set sets a logger in the context.
