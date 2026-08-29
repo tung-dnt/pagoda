@@ -11,13 +11,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/mikestefanello/backlite"
 	"github.com/spf13/afero"
 	"github.com/tung-dnt/meme-app/config"
 	"github.com/tung-dnt/meme-app/pkg/log"
 	"github.com/tung-dnt/meme-app/pkg/postgres"
 	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+
+	_ "modernc.org/sqlite"
 )
 
 // Container contains all services used by the application and provides an easy way to handle dependency
@@ -255,7 +256,7 @@ func openSQLite(connection string) (*sql.DB, error) {
 		}
 	}
 
-	return sql.Open("sqlite3", replaceRand(connection))
+	return sql.Open("sqlite", replaceRand(connection))
 }
 
 // replaceRand substitutes $RAND in a connection string with a random value, which is used to give

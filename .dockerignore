@@ -1,0 +1,31 @@
+# The build context is 227 MB without this, most of it host-only tooling.
+.git
+.github
+.claude
+.idea
+
+# Local runtime state — the image creates its own empty dirs for these.
+tmp/
+dbs/
+uploads/
+
+# Host-native Tailwind CLI (76 MB, macOS binary) and its inputs. The generated
+# public/static/main.css is committed and embedded, so none of this is needed.
+tailwindcss
+daisyui.js
+daisyui-theme.js
+tailwind.css
+
+# Not read by `go build`.
+docs/
+tasks/
+scripts/
+Makefile
+README.md
+PAGODA.md
+LICENSE
+.air.toml
+sqlc.yaml
+docker-compose.yml
+Dockerfile
+.dockerignore

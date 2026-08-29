@@ -11,7 +11,9 @@ import (
 func JS() Node {
 	return Group{
 		Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"), Defer()),
-		Script(Src("https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"), Defer()),
+		// Pinned to an exact version, not a `3.x.x` range: the service worker caches this
+		// URL, and a floating range would serve changing content behind a stable cache key.
+		Script(Src("https://unpkg.com/alpinejs@3.16.3/dist/cdn.min.js"), Defer()),
 	}
 }
 

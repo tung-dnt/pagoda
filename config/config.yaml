@@ -11,7 +11,7 @@ http:
     key: ""
 
 app:
-  name: "Pagoda"
+  name: "pagoda"
   # We manually set this rather than using the HTTP settings in order to build absolute URLs for users
   # since it's likely your app's HTTP settings are not identical to what is exposed by your server.
   host: "http://localhost:8000"
@@ -41,7 +41,9 @@ database:
   # $RAND will be automatically replaced with a random value.
   # memdb is more robust for an in-memory database rather than :memory: because the latter has the potential
   # retain data even after you close and re-open the connection.
-  tasksConnection: "dbs/tasks.db?_journal=WAL&_timeout=5000&_fk=true"
+  # The driver is modernc.org/sqlite (pure Go, no cgo), which takes its settings as `_pragma` query
+  # parameters applied to every new connection rather than the mattn/go-sqlite3 shorthands.
+  tasksConnection: "dbs/tasks.db?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=foreign_keys(1)"
 
 files:
   directory: "uploads"
@@ -57,4 +59,4 @@ mail:
   port: 25
   user: "admin"
   password: "admin"
-  fromAddress: "admin@localhost"
+  fromAddress: "admin@localhost.com"
