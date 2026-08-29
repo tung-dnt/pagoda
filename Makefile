@@ -26,7 +26,7 @@ MIGRATIONS_DIR = pkg/postgres/migrations
 
 # Connection string used by the golang-migrate CLI targets. Override to point at another environment,
 # ie: make migrate-up DATABASE_URL="postgres://..."
-DATABASE_URL ?= postgres://pagoda:pagoda@localhost:5432/pagoda?sslmode=disable
+DATABASE_URL ?= postgres://memleak:memleak@localhost:5432/memleak?sslmode=disable
 
 # The golang-migrate CLI needs its database driver selected at compile time via a build tag, which
 # `go tool` cannot pass. It is therefore run with `go run -tags pgx5` instead — still pinned to the
@@ -93,8 +93,8 @@ migrate-force: ## Clear a dirty migration state (ie, make migrate-force version=
 	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_URL)" force $(version)
 
 .PHONY: admin
-admin: ## Create a new admin user (ie, make admin email=myemail@web.com)
-	go run cmd/admin/main.go --email=$(ADMIN_EMAIL)
+admin: ## Create a new admin user (ie, make admin ADMIN_EMAIL=me@web.com [DATABASE_URL=postgres://...])
+	GO_DATABASE_CONNECTION="$(DATABASE_URL)" go run cmd/admin/main.go --email=$(ADMIN_EMAIL)
 
 .PHONY: run
 run: ## Run the application

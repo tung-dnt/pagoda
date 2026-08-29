@@ -21,9 +21,12 @@ func (h *Pages) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Pages) Routes(g *echo.Group) {
-	g.GET("/", h.Home).Name = routenames.Home
-	g.GET("/about", h.About).Name = routenames.About
+// Routes registers the public application pages on the public group so they are edge-cacheable.
+// Neither page contains a CSRF-protected form; a logged-in visitor still renders personalized
+// (Session/LoadAuthenticatedUser run in the shared base) and bypasses the cache at the edge.
+func (h *Pages) Routes(_, pub *echo.Group) {
+	pub.GET("/", h.Home).Name = routenames.Home
+	pub.GET("/about", h.About).Name = routenames.About
 }
 
 func (h *Pages) Home(ctx echo.Context) error {

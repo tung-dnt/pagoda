@@ -27,9 +27,9 @@ func (h *Files) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Files) Routes(g *echo.Group) {
-	g.GET("/files", h.Page).Name = routenames.Files
-	g.POST("/files", h.Submit).Name = routenames.FilesSubmit
+func (h *Files) Routes(_, p *echo.Group) {
+	p.GET("/files", h.Page).Name = routenames.Files
+	p.POST("/files", h.Submit).Name = routenames.FilesSubmit
 }
 
 func (h *Files) Page(ctx echo.Context) error {

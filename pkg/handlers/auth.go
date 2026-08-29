@@ -45,7 +45,7 @@ func (h *Auth) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Auth) Routes(g *echo.Group) {
+func (h *Auth) Routes(g, _ *echo.Group) {
 	g.GET("/logout", h.Logout, middleware.RequireAuthentication).Name = routenames.Logout
 	g.GET("/email/verify/:token", h.VerifyEmail).Name = routenames.VerifyEmail
 

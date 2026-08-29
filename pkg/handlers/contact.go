@@ -25,9 +25,9 @@ func (h *Contact) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Contact) Routes(g *echo.Group) {
-	g.GET("/contact", h.Page).Name = routenames.Contact
-	g.POST("/contact", h.Submit).Name = routenames.ContactSubmit
+func (h *Contact) Routes(_, p *echo.Group) {
+	p.GET("/contact", h.Page).Name = routenames.Contact
+	p.POST("/contact", h.Submit).Name = routenames.ContactSubmit
 }
 
 func (h *Contact) Page(ctx echo.Context) error {
@@ -53,7 +53,6 @@ func (h *Contact) Submit(ctx echo.Context) error {
 		Subject("Contact form submitted").
 		Body(fmt.Sprintf("The message is: %s", input.Message)).
 		Send(ctx)
-
 	if err != nil {
 		return fail(err, "unable to send email")
 	}

@@ -1,89 +1,75 @@
-# ent → sqlc + golang-migrate migration (meme-app / pagoda)
+# TODO: Meme Sticker App — Phase 1
 
-## Decisions (confirmed with user 2026-08-25)
-- **Engine: PostgreSQL** (pgx/v5), mirroring `~/projects/gokit/sqlc.yaml`.
-- **Drop the ent-generated entity CRUD admin panel** entirely.
-- Consequence (flagged): `backlite` (task queue) is SQLite-only (`modernc.org/sqlite`).
-  → Container keeps a *second*, small SQLite connection purely for tasks.
-  → The `/admin/tasks` backlite dashboard **stays**; only `/admin/entity/*` goes.
-- Consequence: tests now need a real Postgres (no more in-memory memdb).
+29 tasks. One task ≈ one sitting. Full detail in [`tasks/meme-app/`](./meme-app/);
+plan and risks in [`tasks/plan.md`](./plan.md).
 
-## Pinned contract (do not diverge)
-- Layout: `sqlc.yaml` (root), `pkg/postgres/{migrations,queries,db}`, package `pgdb`.
-- IDs: `BIGSERIAL` → Go `int64` (was ent `int`). Update all call sites.
-- `*ent.User` → `*pgdb.User`; `*ent.PasswordToken` → `*pgdb.PasswordToken`.
-- `*ent.NotFoundError` → `errors.Is(err, pgx.ErrNoRows)`.
-- `*ent.ConstraintError` (dupe email) → `*pgconn.PgError` with `Code == "23505"`.
-- ent hooks removed → invariants move explicitly:
-  - email lowercasing enforced in SQL (`LOWER($n)`).
-  - bcrypt hashing of password + reset token done in `pkg/services` before insert.
-- `Container.ORM *ent.Client` → `Container.Queries *pgdb.Queries` + `Container.Database *pgxpool.Pool`.
-- `Container.TasksDatabase *sql.DB` (SQLite) for backlite.
+**Sizes:** XS ~30 min · S ~1 h · M ~2–3 h. Nothing larger is allowed.
 
-## Tasks
-- [x] P1 Foundation (main agent): sqlc.yaml, migrations, queries, `sqlc generate`, embedded migrate runner
-- [x] P2a Agent: services layer (container.go, auth.go, auth_test.go, services_test.go)
-- [x] P2b Agent: admin removal (handlers/admin.go, ui/pages/admin_entity.go, ui/forms/admin_entity*.go, middleware/entity.go, routenames, layouts/primary.go, context keys)
-- [x] P2c Agent: remaining consumers (handlers/auth.go, middleware/auth.go, ui/request.go+test, pkg/tests/tests.go, cmd/admin/main.go)
-- [x] P3 Teardown (main): delete `ent/`, Makefile targets, config.yaml, .air.toml, docker-compose for PG, `go mod tidy`
-- [x] P4 Verify: `go build ./...`, `go vet ./...`, `go test ./...` against a live Postgres
+**Rule:** every task ends with `make test && make build` exiting 0.
 
-## Review
 
-Done. `go vet ./...` and the full test suite pass against a live Postgres.
-51 test functions before, 51 after -- none added, removed or weakened.
+## E01 · Foundation
 
-### CORRECTION: parallel-test race (found by the ui-tests agent, confirmed, fixed)
-My first pass had `initDatabase` call `postgres.Drop(TestConnection)` on every container. Each test
-package is its own process and `go test` runs packages in parallel, so packages dropped the schema
-out from under each other. My initial "all tests pass" was timing luck -- it reproduced 3/3 with
-`go test ./pkg/services/... ./pkg/middleware/... ./pkg/handlers/...` (FK violation 23503).
+- [ ] **[T01](./meme-app/E01-foundation/T01-clipboard-spike.md)** · Clipboard spike on iOS Safari — `S` · deps: None
+- [ ] **[T02](./meme-app/E01-foundation/T02-strip-public-auth.md)** · Strip public registration — `S` · deps: None
+- [ ] **[T03](./meme-app/E01-foundation/T03-strip-demo-pages.md)** · Strip boilerplate demo pages — `S` · deps: T02
+- [ ] **[T04](./meme-app/E01-foundation/T04-schema.md)** · Schema migration + sqlc queries — `M` · deps: None
+- [ ] **[T05](./meme-app/E01-foundation/T05-r2-storage.md)** · R2 storage service — `M` · deps: None
+- [ ] **Checkpoint** — [E01](./meme-app/E01-foundation/README.md): all tasks done, `make sqlc-vet && make test && make build` green
 
-Fix: each test process now isolates itself in a randomly-named Postgres schema via `search_path`,
-reusing the `$RAND` convention the SQLite test DB already used. `postgres.Drop` was replaced by
-`CreateSchema` / `DropSchema`; the schema is created on startup and dropped on shutdown. Verified
-5/5 green afterwards, still running packages in parallel (no `-p 1` serialization needed), and
-0 leaked `test_*` schemas left behind.
+## E02 · Browse
 
-### Verified at runtime (not just compiled)
-- Embedded migrations apply and are idempotent; Drop->Migrate cycle works (used by the test env).
-- Schema matches intent (BIGSERIAL ids, unique email, FK w/ ON DELETE CASCADE, timestamptz).
-- `make admin` creates a user with a real bcrypt hash (`$2a$10$`, 60 chars) -- NOT plaintext.
-  This was the highest-risk part of dropping ent's hooks.
-- HTTP register with `E2E.User@Example.COM` stored as `e2e.user@example.com` (SQL LOWER() works).
-- HTTP login with different casing + correct password -> authenticated session.
-- Wrong password -> "Invalid credentials". Duplicate email -> the pgconn 23505 branch fires
-  and redirects to login with the expected message.
-- `/admin/tasks` 200 for admin, 401 for non-admin and anon; `/admin/entity/user` now 404.
-- Sidebar no longer renders the "Entities" section.
-- Password-reset tokens stored bcrypt-hashed; round-trip + expiry covered by the ported
-  `TestAuthClient_GetValidPasswordToken`.
+- [ ] **[T06](./meme-app/E02-browse/T06-image-metadata.md)** · Image sniffing + animation detection — `S` · deps: None
+- [ ] **[T07](./meme-app/E02-browse/T07-seed.md)** · Dev seed command — `S` · deps: T04, T05, T06
+- [ ] **[T08](./meme-app/E02-browse/T08-home-grid.md)** · Home page: pack grid — `M` · deps: T04, T07
+- [ ] **[T09](./meme-app/E02-browse/T09-pack-detail.md)** · Pack detail page — `M` · deps: T08
+- [ ] **Checkpoint** — [E02](./meme-app/E02-browse/README.md): all tasks done, `make sqlc-vet && make test && make build` green
 
-### Left alone deliberately
-- `PAGODA.md` (untracked, 69KB) is the upstream Pagoda README and still documents the Ent data
-  layer. Not rewritten -- it is a reference copy the user added. `README.md` now carries the
-  authoritative description of the new setup and points this out.
+## E03 · Copy to clipboard
 
-### Module rename + an unexplained file deletion (resolved)
-Mid-session the module was renamed to `github.com/tung-dnt/meme-app`. I initially attributed this to
-session meme-app-9f; that was WRONG -- it confirmed it never touched this repo. The rename is now
-complete (go.mod + all imports) and the build is clean. Author unknown.
+- [ ] **[T10](./meme-app/E03-clipboard/T10-clipboard-js.md)** · clipboard.js: the two copy paths — `M` · deps: T01, T09
+- [ ] **[T11](./meme-app/E03-clipboard/T11-copy-wiring.md)** · Wire copy into the sticker tile — `S` · deps: T10
+- [ ] **Checkpoint** — [E03](./meme-app/E03-clipboard/README.md): all tasks done, `make sqlc-vet && make test && make build` green
 
-The same event deleted `cmd/admin/main.go` from the worktree. Neither this session nor meme-app-9f
-deleted it. It was unrecoverable from git (HEAD/index hold only the pre-migration Ent version, which
-no longer compiles), so it was restored from this session's copy of the migrated version, then
-re-verified: `make admin` runs and writes a real bcrypt hash ($2a$10$, 60 chars).
+## E04 · Favorites
 
-Audit of every other deletion in `git status`: the whole staged `ent/**` tree is the intentional
-removal, and `pkg/ui/{forms/admin_entity.go, forms/admin_entity_delete.go, pages/admin_entity.go}`
-are the intentional admin-panel removal. Nothing else was lost.
+- [ ] **[T12](./meme-app/E04-favorites/T12-indexeddb.md)** · db.js: IndexedDB wrapper — `M` · deps: None
+- [ ] **[T13](./meme-app/E04-favorites/T13-favorite-toggle.md)** · favorites.js: toggle + blob cache — `M` · deps: T12, T11
+- [ ] **[T14](./meme-app/E04-favorites/T14-favorites-page.md)** · /favorites page + hydration — `M` · deps: T13
+- [ ] **[T15](./meme-app/E04-favorites/T15-favorite-pack.md)** · Pack-level favorite — `S` · deps: T14
+- [ ] **[T16](./meme-app/E04-favorites/T16-service-worker.md)** · Service worker: offline shell — `M` · deps: T14, T15
+- [ ] **Checkpoint** — [E04](./meme-app/E04-favorites/README.md): all tasks done, `make sqlc-vet && make test && make build` green
 
-The rename also broke import ordering in 11 files (the new path sorts differently); `gofmt -w`
-applied, tree is gofmt-clean again.
+## E05 · Search & tags
 
-### Follow-ups the user may want
-- Session cookies store the user ID; it changed from `int` to `int64`, so sessions issued before
-  this change will fail the type assertion in `GetAuthenticatedUserID`. Harmless in dev; worth a
-  session-store flush if this were ever deployed with real users.
-- `backlite` remains on SQLite (`dbs/tasks.db`). If a single datastore is wanted, the task queue
-  would need replacing.
+- [ ] **[T17](./meme-app/E05-discovery/T17-tag-queries.md)** · Tag queries + chips — `S` · deps: T04, T08
+- [ ] **[T18](./meme-app/E05-discovery/T18-search.md)** · Search endpoint + results — `M` · deps: T17
+- [ ] **[T19](./meme-app/E05-discovery/T19-tag-filter.md)** · Tag filtering — `S` · deps: T18
+- [ ] **Checkpoint** — [E05](./meme-app/E05-discovery/README.md): all tasks done, `make sqlc-vet && make test && make build` green
+
+## E06 · Upload
+
+- [ ] **[T20](./meme-app/E06-upload/T20-zip-extract.md)** · Safe zip extraction service — `M` · deps: T06
+- [ ] **[T21](./meme-app/E06-upload/T21-invite-gate.md)** · Upload form + invite gate + rate limit — `M` · deps: T05
+- [ ] **[T22](./meme-app/E06-upload/T22-upload-single.md)** · Upload POST: single image → Singles — `M` · deps: T21, T06
+- [ ] **[T23](./meme-app/E06-upload/T23-upload-zip.md)** · Async zip ingestion task — `M` · deps: T22, T20
+- [ ] **Checkpoint** — [E06](./meme-app/E06-upload/README.md): all tasks done, `make sqlc-vet && make test && make build` green
+
+## E07 · Moderation
+
+- [ ] **[T24](./meme-app/E07-moderation/T24-queue.md)** · Admin queue page — `M` · deps: T23
+- [ ] **[T25](./meme-app/E07-moderation/T25-approve-reject.md)** · Approve / reject a sticker — `M` · deps: T24
+- [ ] **[T26](./meme-app/E07-moderation/T26-bulk-approve.md)** · Bulk pack approve — `S` · deps: T25
+- [ ] **Checkpoint** — [E07](./meme-app/E07-moderation/README.md): all tasks done, `make sqlc-vet && make test && make build` green
+
+## E08 · Ship
+
+- [ ] **[T27](./meme-app/E08-ship/T27-ci.md)** · Fix CI Go version + green pipeline — `XS` · deps: None
+- [ ] **[T28](./meme-app/E08-ship/T28-browser-checklist.md)** · Manual browser verification — `S` · deps: T26
+- [ ] **[T29](./meme-app/E08-ship/T29-deploy.md)** · Deploy: HTTPS, buckets, CORS, env — `M` · deps: T27, T28
+- [ ] **Checkpoint** — [E08](./meme-app/E08-ship/README.md): all tasks done, `make sqlc-vet && make test && make build` green
+
+## Done means
+
+All 16 success criteria in [spec §9](../docs/spec/phase-1.md) verified against production,
+not against localhost.

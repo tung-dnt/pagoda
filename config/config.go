@@ -82,9 +82,14 @@ type (
 
 	// CacheConfig stores the cache configuration.
 	CacheConfig struct {
-		Capacity   int
-		Expiration struct {
+		Capacity int
+		// StaleWhileRevalidate is how long a cached public page may be served stale while it is
+		// revalidated in the background (also used as the stale-if-error window).
+		StaleWhileRevalidate time.Duration
+		Expiration           struct {
 			PublicFile time.Duration
+			// PublicPage is the browser max-age emitted for cacheable rendered HTML pages.
+			PublicPage time.Duration
 		}
 	}
 

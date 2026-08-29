@@ -30,9 +30,9 @@ func (h *Task) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Task) Routes(g *echo.Group) {
-	g.GET("/task", h.Page).Name = routenames.Task
-	g.POST("/task", h.Submit).Name = routenames.TaskSubmit
+func (h *Task) Routes(_, p *echo.Group) {
+	p.GET("/task", h.Page).Name = routenames.Task
+	p.POST("/task", h.Submit).Name = routenames.TaskSubmit
 }
 
 func (h *Task) Page(ctx echo.Context) error {
@@ -59,7 +59,6 @@ func (h *Task) Submit(ctx echo.Context) error {
 		}).
 		Wait(time.Duration(input.Delay) * time.Second).
 		Save()
-
 	if err != nil {
 		return fail(err, "unable to create a task")
 	}

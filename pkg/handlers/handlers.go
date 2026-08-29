@@ -12,8 +12,10 @@ var handlers []Handler
 
 // Handler handles one or more HTTP routes
 type Handler interface {
-	// Routes allows for self-registration of HTTP routes on the router
-	Routes(g *echo.Group)
+	// Routes allows for self-registration of HTTP routes on the router.
+	// g is the standard (authenticated, CSRF-protected) group; pub is the public group for
+	// cacheable, cookie-free pages. Most handlers only use g.
+	Routes(g, pub *echo.Group)
 
 	// Init provides the service container to initialize
 	Init(*services.Container) error

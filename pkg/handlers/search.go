@@ -21,7 +21,7 @@ func (h *Search) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Search) Routes(g *echo.Group) {
+func (h *Search) Routes(g, _ *echo.Group) {
 	g.GET("/search", h.Page).Name = routenames.Search
 }
 

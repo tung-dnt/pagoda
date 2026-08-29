@@ -11,7 +11,7 @@ http:
     key: ""
 
 app:
-  name: "pagoda"
+  name: "memleak"
   # We manually set this rather than using the HTTP settings in order to build absolute URLs for users
   # since it's likely your app's HTTP settings are not identical to what is exposed by your server.
   host: "http://localhost:8000"
@@ -26,17 +26,19 @@ app:
 
 cache:
   capacity: 100000
+  staleWhileRevalidate: "24h"
   expiration:
     publicFile: "4380h"
+    publicPage: "60s"
 
 database:
   # Application data lives in PostgreSQL. Migrations are embedded in the binary and applied on startup.
-  connection: "postgres://pagoda:pagoda@localhost:5432/pagoda?sslmode=disable"
+  connection: "postgres://memleak:memleak@localhost:5432/memleak?sslmode=disable"
   # Used when the environment is "test".
   # $RAND will be automatically replaced with a random value, giving each test process its own
   # throwaway schema so that packages tested in parallel cannot clobber each other. The schema is
   # created on startup and dropped on shutdown.
-  testConnection: "postgres://pagoda:pagoda@localhost:5432/pagoda_test?sslmode=disable&search_path=test_$RAND"
+  testConnection: "postgres://memleak:memleak@localhost:5432/memleak_test?sslmode=disable&search_path=test_$RAND"
   # The task queue (backlite) is SQLite-only, so it keeps its own database.
   # $RAND will be automatically replaced with a random value.
   # memdb is more robust for an in-memory database rather than :memory: because the latter has the potential

@@ -45,15 +45,16 @@ func BuildRouter(c *services.Container) error {
 		middleware.CacheControl(c.Config.Cache.Expiration.PublicFile),
 	).StaticFS("static", echo.MustSubFS(files.Static, "static"))
 
-	// Non-static file route group.
-	g := c.Web.Group("")
-
 	// Create a cookie store for session data.
 	cookieStore := sessions.NewCookieStore([]byte(c.Config.App.EncryptionKey))
 	cookieStore.Options.HttpOnly = true
 	cookieStore.Options.SameSite = http.SameSiteStrictMode
 
-	g.Use(
+	// Base middleware shared by both dynamic route groups. Defined once so the authenticated
+	// and public groups never repeat it. Note Session and LoadAuthenticatedUser are here (not
+	// CSRF): they only read cookies, so public pages stay cookie-free for anonymous visitors
+	// while still rendering personalized content for logged-in ones.
+	base := []echo.MiddlewareFunc{
 		echomw.RemoveTrailingSlashWithConfig(echomw.TrailingSlashConfig{
 			RedirectCode: http.StatusMovedPermanently,
 		}),
@@ -69,12 +70,24 @@ func BuildRouter(c *services.Container) error {
 		middleware.Config(c.Config),
 		middleware.Session(cookieStore),
 		middleware.LoadAuthenticatedUser(c.Auth),
-		echomw.CSRFWithConfig(echomw.CSRFConfig{
-			TokenLookup:    "form:csrf",
-			CookieHTTPOnly: true,
-			CookieSameSite: http.SameSiteStrictMode,
-			ContextKey:     context.CSRFKey,
-		}),
+	}
+
+	// Authenticated group: base + CSRF. Hosts every form/action route.
+	g := c.Web.Group("", base...)
+	g.Use(echomw.CSRFWithConfig(echomw.CSRFConfig{
+		TokenLookup:    "form:csrf",
+		CookieHTTPOnly: true,
+		CookieSameSite: http.SameSiteStrictMode,
+		ContextKey:     context.CSRFKey,
+	}))
+
+	// Public group: base + optimistic HTML caching and ETag revalidation, and deliberately no
+	// CSRF (which would set a per-session cookie and fragment the shared cache). Only
+	// cookie-free, form-less pages may be registered here.
+	p := c.Web.Group("", base...)
+	p.Use(
+		middleware.CacheHTML(c.Config.Cache.Expiration.PublicPage, c.Config.Cache.StaleWhileRevalidate),
+		middleware.ETag(),
 	)
 
 	// Error handler.
@@ -86,7 +99,7 @@ func BuildRouter(c *services.Container) error {
 			return err
 		}
 
-		h.Routes(g)
+		h.Routes(g, p)
 	}
 
 	return nil

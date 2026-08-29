@@ -29,7 +29,7 @@ func (h *Admin) Init(c *services.Container) error {
 	return err
 }
 
-func (h *Admin) Routes(g *echo.Group) {
+func (h *Admin) Routes(g, _ *echo.Group) {
 	ag := g.Group("/admin", middleware.RequireAdmin)
 
 	tasks := ag.Group("/tasks")
