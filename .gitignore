@@ -4,3 +4,5 @@ uploads
 tmp
 tailwindcss
 daisyui*
+node_modules
+public/static/js/

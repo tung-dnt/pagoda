@@ -9,18 +9,19 @@ tmp/
 dbs/
 uploads/
 
-# Host-native Tailwind CLI (76 MB, macOS binary) and its inputs. The generated
-# public/static/main.css is committed and embedded, so none of this is needed.
+# Host-native Tailwind CLI (76 MB, macOS binary) and plugins: the image downloads
+# its own Linux build via `make tailwind-install`. Host JS deps and bundle output
+# are rebuilt in the image too.
 tailwindcss
 daisyui.js
 daisyui-theme.js
-tailwind.css
+node_modules
+public/static/js/
 
 # Not read by `go build`.
 docs/
 tasks/
 scripts/
-Makefile
 README.md
 PAGODA.md
 LICENSE

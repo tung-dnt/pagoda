@@ -11,15 +11,26 @@ ifeq ($(OS_SYSNAME),darwin)
 	endif
 endif
 
-# If Linux, use `linux-x64`
+# If Linux, normalise the arch (x86_64->x64, aarch64->arm64) and, on Alpine,
+# select the musl build — this is what lets the Docker (alpine) image reuse the
+# very same install target instead of re-implementing the download.
 ifeq ($(OS_SYSNAME),linux)
-	OS_MACHINE = x64
+	ifeq ($(OS_MACHINE),x86_64)
+		OS_MACHINE = x64
+	endif
+	ifeq ($(OS_MACHINE),aarch64)
+		OS_MACHINE = arm64
+	endif
+	TAILWIND_LIBC := $(shell [ -f /etc/alpine-release ] && echo -musl)
 endif
+
+# Pinned toolchain versions, shared with the Dockerfile — single source of truth.
+include versions.env
 
 # The appropriate Tailwind package for your OS will attempt to be automatically determined.
 # If this is not working, hard-code the package you want using these options:
-# https://github.com/tailwindlabs/tailwindcss/releases/latest
-TAILWIND_PACKAGE = tailwindcss-$(OS_SYSNAME)-$(OS_MACHINE)
+# https://github.com/tailwindlabs/tailwindcss/releases/tag/v$(TAILWIND_VERSION)
+TAILWIND_PACKAGE = tailwindcss-$(OS_SYSNAME)-$(OS_MACHINE)$(TAILWIND_LIBC)
 
 # Where the golang-migrate migration files live. sqlc reads the same directory as its schema source.
 MIGRATIONS_DIR = pkg/postgres/migrations
@@ -41,12 +52,16 @@ help: ## Print make targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 .PHONY: install
-install: deps-install tailwind-install ## Install all dependencies
+install: deps-install tailwind-install bun-install ## Install all dependencies
 
 .PHONY: deps-install
 deps-install: ## Download the Go modules and pre-build the tools pinned in go.mod
 	go mod download
 	go build -o ./tmp/tools/ tool
+
+.PHONY: bun-install
+bun-install: ## Install JS packages with Bun: htmx/Alpine (bundled into app.js) + editor types
+	bun install
 
 .PHONY: tailwind-install
 tailwind-install: ## Install the Tailwind CSS CLI
@@ -54,11 +69,11 @@ tailwind-install: ## Install the Tailwind CSS CLI
 	# replacing a running-or-previously-run binary's contents leaves a stale code-signature cache
 	# for that inode and the next exec is SIGKILLed. `mv` swaps in a new inode, so it cannot happen.
 	mkdir -p tmp
-	curl -sLo tmp/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/latest/download/$(TAILWIND_PACKAGE)
+	curl -sLo tmp/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/v$(TAILWIND_VERSION)/$(TAILWIND_PACKAGE)
 	chmod +x tmp/tailwindcss
 	mv -f tmp/tailwindcss tailwindcss
-	curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
-	curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
+	curl -sLO https://github.com/saadeghi/daisyui/releases/download/v$(DAISYUI_VERSION)/daisyui.js
+	curl -sLO https://github.com/saadeghi/daisyui/releases/download/v$(DAISYUI_VERSION)/daisyui-theme.js
 
 .PHONY: db-up
 db-up: ## Start PostgreSQL via Docker
@@ -118,6 +133,15 @@ check-updates: ## Check for direct dependency updates
 css: ## Build and minify Tailwind CSS
 	./tailwindcss -i tailwind.css -o public/static/main.css -m
 
+.PHONY: js
+js: ## Bundle and minify TypeScript with esbuild (ESM, code-split)
+	# --splitting: dynamic import() targets become content-hashed chunks under js/chunks/, fetched only
+	# when a page needs them; htmx + Alpine stay in app.js because every page uses them. The output
+	# dir is wiped first so stale chunks are never embedded. No --sourcemap: the bundle is embedded
+	# into the scratch binary, and a ~460KB map would ride along as dead weight.
+	rm -rf public/static/js
+	go tool esbuild pkg/ui/js/app.ts --bundle --minify --splitting --format=esm --outdir=public/static/js --chunk-names=chunks/[name]-[hash]
+
 .PHONY: build
-build: css ## Build CSS and compile the application binary
+build: css js ## Build assets and compile the application binary
 	go build -o ./tmp/main ./cmd/web

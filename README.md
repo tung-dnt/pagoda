@@ -23,7 +23,7 @@ pkg/postgres/
 ## Getting started
 
 ```bash
-make install     # Go modules + pinned tools (sqlc, air, golang-migrate) + the Tailwind CLI
+make install     # Go modules + pinned tools (sqlc, air, esbuild, golang-migrate) + Tailwind CLI + JS packages (Bun)
 make db-up       # start PostgreSQL (creates the "pagoda" and "pagoda_test" databases)
 make migrate-up  # apply the schema migrations
 make run         # run the application

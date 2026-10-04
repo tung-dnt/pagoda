@@ -42,7 +42,7 @@ func Primary(r *ui.Request, content Node) Node {
 					sidebarMenu(r),
 				),
 				searchModal(r),
-				HtmxListeners(r),
+				CSRFToken(r),
 			),
 		),
 	)

@@ -1,6 +1,15 @@
 # syntax=docker/dockerfile:1
 
 # ---------------------------------------------------------------------------
+# Stage 0: JS dependencies
+# ---------------------------------------------------------------------------
+FROM --platform=$BUILDPLATFORM oven/bun:1.4.2-alpine AS jsdeps
+WORKDIR /src
+COPY package.json bun.lock ./
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+  bun install --frozen-lockfile
+
+# ---------------------------------------------------------------------------
 # Stage 1: build
 #
 # --platform=$BUILDPLATFORM keeps the compiler running natively while
@@ -15,6 +24,19 @@ ARG TARGETARCH
 
 WORKDIR /src
 
+# Toolchain for the Makefile's asset targets — same commands as local dev, so
+# there is no duplicated download logic here. libstdc++/libgcc: the standalone
+# Tailwind binary is Bun-compiled C++ and links against them even in the -musl
+# build; Alpine omits them by default.
+RUN apk add --no-cache make curl libstdc++ libgcc
+
+# Fetch the pinned Tailwind CLI + daisyui plugins via `make tailwind-install`
+# (versions from versions.env; arch/musl auto-detected in the Makefile). Own
+# early layer so it caches across source changes. .dockerignore keeps the host
+# copies out, so the later `COPY . .` won't clobber what this downloads.
+COPY Makefile versions.env ./
+RUN make tailwind-install
+
 # Dependency layer: only invalidated when go.mod/go.sum change.
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -22,10 +44,17 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 COPY . .
 
-# Static assets (public/static/main.css) are embedded into the binary by
-# public/fs.go, so run `make css` before building this image if the Tailwind
-# sources changed — nothing here regenerates them.
-#
+# node_modules from the jsdeps stage — esbuild resolves htmx/Alpine from here.
+COPY --from=jsdeps /src/node_modules ./node_modules
+
+# Regenerate the embedded assets (public/static/main.css + the js/ bundle,
+# embedded by public/fs.go) with the same Makefile targets local dev uses, so
+# build output never ships stale. Runs on every source change; the tool
+# download above stays cached.
+RUN --mount=type=cache,target=/go/pkg/mod \
+  --mount=type=cache,target=/root/.cache/go-build \
+  make css js
+
 # -tags timetzdata embeds the zoneinfo database, which scratch does not carry.
 RUN --mount=type=cache,target=/go/pkg/mod \
   --mount=type=cache,target=/root/.cache/go-build \
