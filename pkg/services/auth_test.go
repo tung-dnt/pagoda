@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
 
 	"github.com/stretchr/testify/require"
 

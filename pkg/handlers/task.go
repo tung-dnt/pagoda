@@ -5,16 +5,16 @@ import (
 	"time"
 
 	"github.com/mikestefanello/backlite"
-	"github.com/tung-dnt/meme-app/pkg/msg"
-	"github.com/tung-dnt/meme-app/pkg/routenames"
-	"github.com/tung-dnt/meme-app/pkg/ui/forms"
-	"github.com/tung-dnt/meme-app/pkg/ui/pages"
+	"github.com/tung-dnt/pagoda/pkg/msg"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/ui/forms"
+	"github.com/tung-dnt/pagoda/pkg/ui/pages"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/meme-app/pkg/form"
-	"github.com/tung-dnt/meme-app/pkg/services"
-	"github.com/tung-dnt/meme-app/pkg/tasks"
+	"github.com/tung-dnt/pagoda/pkg/form"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/tasks"
 )
 
 type Task struct {
@@ -30,9 +30,9 @@ func (h *Task) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Task) Routes(_, p *echo.Group) {
-	p.GET("/task", h.Page).Name = routenames.Task
-	p.POST("/task", h.Submit).Name = routenames.TaskSubmit
+func (h *Task) Routes(g, _ *echo.Group) {
+	g.GET("/task", h.Page).Name = routenames.Task
+	g.POST("/task", h.Submit).Name = routenames.TaskSubmit
 }
 
 func (h *Task) Page(ctx echo.Context) error {

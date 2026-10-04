@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/meme-app/pkg/form"
-	"github.com/tung-dnt/meme-app/pkg/routenames"
-	"github.com/tung-dnt/meme-app/pkg/services"
-	"github.com/tung-dnt/meme-app/pkg/ui/forms"
-	"github.com/tung-dnt/meme-app/pkg/ui/pages"
+	"github.com/tung-dnt/pagoda/pkg/form"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/ui/forms"
+	"github.com/tung-dnt/pagoda/pkg/ui/pages"
 )
 
 type Cache struct {
@@ -25,9 +25,9 @@ func (h *Cache) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Cache) Routes(_, p *echo.Group) {
-	p.GET("/cache", h.Page).Name = routenames.Cache
-	p.POST("/cache", h.Submit).Name = routenames.CacheSubmit
+func (h *Cache) Routes(g, _ *echo.Group) {
+	g.GET("/cache", h.Page).Name = routenames.Cache
+	g.POST("/cache", h.Submit).Name = routenames.CacheSubmit
 }
 
 func (h *Cache) Page(ctx echo.Context) error {

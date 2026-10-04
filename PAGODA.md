@@ -1125,7 +1125,7 @@ Static files, which are intended to be CSS, JS, UI images, etc, are currently co
 
 #### Cache-buster
 
-While it's ideal to use cache control headers on your static files so browsers cache the files, you need a way to bust the cache in case the files are changed. To do this, a function, `StaticFile()`, is provided in the `ui` package to generate a static file URL for a given file that appends a cache-buster query. This query string is generated using the timestamp of when the app started and persists until the application restarts.
+While it's ideal to use cache control headers on your static files so browsers cache the files, you need a way to bust the cache in case the files are changed. To do this, a function, `StaticFile()`, is provided in the `ui` package to generate a static file URL for a given file that appends a cache-buster query. The query is a short hash of the file's content, computed once at startup from the embedded files, so it only changes when that file changes — not on every deploy or restart. A path that isn't in `public/static` gets no query.
 
 For example, to render a file located in `public/static/picture.png`, you would use:
 ```go
@@ -1134,10 +1134,10 @@ return Img(Src(ui.StaticFile("picture.png")))
 
 Which would result in:
 ```html
-<img src="/static/picture.png?v=1741053493"/>
+<img src="/static/picture.png?v=3f2a9c0d1e"/>
 ```
 
-Where `1741053493` is the cache-buster.
+Where `3f2a9c0d1e` is the cache-buster.
 
 ### Public files
 

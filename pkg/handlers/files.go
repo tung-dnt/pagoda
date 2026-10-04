@@ -7,11 +7,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/afero"
-	"github.com/tung-dnt/meme-app/pkg/msg"
-	"github.com/tung-dnt/meme-app/pkg/routenames"
-	"github.com/tung-dnt/meme-app/pkg/services"
-	"github.com/tung-dnt/meme-app/pkg/ui/models"
-	"github.com/tung-dnt/meme-app/pkg/ui/pages"
+	"github.com/tung-dnt/pagoda/pkg/msg"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/ui/models"
+	"github.com/tung-dnt/pagoda/pkg/ui/pages"
 )
 
 type Files struct {
@@ -27,9 +27,9 @@ func (h *Files) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Files) Routes(_, p *echo.Group) {
-	p.GET("/files", h.Page).Name = routenames.Files
-	p.POST("/files", h.Submit).Name = routenames.FilesSubmit
+func (h *Files) Routes(g, _ *echo.Group) {
+	g.GET("/files", h.Page).Name = routenames.Files
+	g.POST("/files", h.Submit).Name = routenames.FilesSubmit
 }
 
 func (h *Files) Page(ctx echo.Context) error {

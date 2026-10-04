@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/meme-app/pkg/context"
+	"github.com/tung-dnt/pagoda/pkg/context"
 )
 
 // CacheControl sets a Cache-Control header with a given max age.

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tung-dnt/meme-app/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

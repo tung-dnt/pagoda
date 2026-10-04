@@ -13,10 +13,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/mikestefanello/backlite"
 	"github.com/spf13/afero"
-	"github.com/tung-dnt/meme-app/config"
-	"github.com/tung-dnt/meme-app/pkg/log"
-	"github.com/tung-dnt/meme-app/pkg/postgres"
-	pgdb "github.com/tung-dnt/meme-app/pkg/postgres/db"
+	"github.com/tung-dnt/pagoda/config"
+	"github.com/tung-dnt/pagoda/pkg/log"
+	"github.com/tung-dnt/pagoda/pkg/postgres"
+	pgdb "github.com/tung-dnt/pagoda/pkg/postgres/db"
 
 	_ "modernc.org/sqlite"
 )

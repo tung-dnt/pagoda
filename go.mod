@@ -1,4 +1,4 @@
-module github.com/tung-dnt/meme-app
+module github.com/tung-dnt/pagoda
 
 go 1.27.0
 

@@ -5,11 +5,11 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
-	"github.com/tung-dnt/meme-app/pkg/form"
-	"github.com/tung-dnt/meme-app/pkg/routenames"
-	"github.com/tung-dnt/meme-app/pkg/services"
-	"github.com/tung-dnt/meme-app/pkg/ui/forms"
-	"github.com/tung-dnt/meme-app/pkg/ui/pages"
+	"github.com/tung-dnt/pagoda/pkg/form"
+	"github.com/tung-dnt/pagoda/pkg/routenames"
+	"github.com/tung-dnt/pagoda/pkg/services"
+	"github.com/tung-dnt/pagoda/pkg/ui/forms"
+	"github.com/tung-dnt/pagoda/pkg/ui/pages"
 )
 
 type Contact struct {
@@ -25,9 +25,9 @@ func (h *Contact) Init(c *services.Container) error {
 	return nil
 }
 
-func (h *Contact) Routes(_, p *echo.Group) {
-	p.GET("/contact", h.Page).Name = routenames.Contact
-	p.POST("/contact", h.Submit).Name = routenames.ContactSubmit
+func (h *Contact) Routes(g, _ *echo.Group) {
+	g.GET("/contact", h.Page).Name = routenames.Contact
+	g.POST("/contact", h.Submit).Name = routenames.ContactSubmit
 }
 
 func (h *Contact) Page(ctx echo.Context) error {
